@@ -96,30 +96,4 @@ body {
 }
 
 
-#map-title {
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
 
-  padding: 10px 22px;
-
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-
-  border-radius: 18px;
-
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-
-  color: #1e293b;
-
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.4);
-
-  z-index: 1000;
-
-  pointer-events: none;
-}

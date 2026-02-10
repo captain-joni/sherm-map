@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: shermadmin
+      POSTGRES_PASSWORD: shermpass
+      POSTGRES_DB: shermmap
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: sherm-backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_USER: shermadmin
+      DB_PASSWORD: shermpass
+      DB_NAME: shermmap
+      JWT_SECRET: supersecretkey
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind
+      - ./backend:/usr/src/app         

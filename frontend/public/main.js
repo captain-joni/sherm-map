@@ -18,13 +18,13 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
   if (imageFile) formData.append('image', imageFile);
 
   try {
-    const res = await fetch('http://localhost:3000/api/public/markers', {
+    const res = await fetch('/api/public/markers', {
       method: 'POST',
       body: formData
     });
     const data = await res.json();
     if (data.success) {
-      document.getElementById('marker-result').innerText = 'Marker erfolgreich erstellt! Er muss vom Admin validiert werden.';
+      document.getElementById('marker-result').innerText = 'Marker erfolgreich erstellt! Er muss nur noch von uns geprueft werden.';
       document.getElementById('marker-title').value = '';
       document.getElementById('marker-description').value = '';
       document.getElementById('marker-lat').value = '';
