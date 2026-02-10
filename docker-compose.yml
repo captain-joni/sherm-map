@@ -27,5 +27,4 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind
-      - ./backend:/usr/src/app         
+      - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind      

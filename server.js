@@ -23,13 +23,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Frontend statisch ausliefern
-app.use(express.static(path.join(__dirname, '..', 'Sherm-Map', 'frontend')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // Admin-Frontend ausliefern
-app.use('/admin', express.static(path.join(__dirname, '..', 'Sherm-Map', 'frontend', 'admin')));
+app.use('/admin', express.static(path.join(__dirname, '..',  'frontend', 'admin')));
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.includes('.')) {
-    res.sendFile(path.join(__dirname, '..', 'Sherm-Map', 'frontend', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
   } else {
     next();
   }
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 
 
 // Public Marker-Seite ausliefern
-app.use('/public', express.static(path.join(__dirname, '..', 'Sherm-Map', 'frontend', 'public')));
+app.use('/public', express.static(path.join(__dirname, '..', 'frontend', 'public')));
 
 
 // Routes
