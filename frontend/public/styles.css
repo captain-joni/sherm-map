@@ -1,0 +1,125 @@
+/* Grundlayout */
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #f5f7fa;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Container */
+#public-container {
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  width: 95%;
+  max-width: 400px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+#public-container:hover {
+  transform: translateY(-3px);
+}
+
+/* Überschrift */
+#public-container h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* Input & Textarea */
+#public-container input[type="text"],
+#public-container textarea,
+#public-container input[type="file"] {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ccd0d5;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+#public-container input:focus,
+#public-container textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52,152,219,0.3);
+}
+
+/* Button */
+#add-marker-btn {
+  width: 100%;
+  padding: 12px 0;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#add-marker-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+#add-marker-btn:active {
+  transform: translateY(0);
+}
+
+/* Ergebnisanzeige */
+#marker-result {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #27ae60;
+}
+
+/* Mobile Anpassungen */
+@media (max-width: 480px) {
+  #public-container {
+    padding: 20px 15px;
+  }
+  #add-marker-btn {
+    font-size: 14px;
+  }
+}
+
+
+#map-title {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 10px 22px;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+
+  border-radius: 18px;
+
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+
+  color: #1e293b;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+
+  z-index: 1000;
+
+  pointer-events: none;
+}

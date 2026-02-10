@@ -1,0 +1,94 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+
+.add-marker-control {
+  min-width: 180px;
+  height: 56px;
+
+  padding: 0 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+
+  border: none;
+  border-radius: 16px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+
+  white-space: nowrap;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+/* Hover */
+.add-marker-control:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Click */
+.add-marker-control:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,0.35),
+    inset 0 2px 6px rgba(0,0,0,0.35);
+}
+
+/* Leaflet Reset */
+.leaflet-control button.add-marker-control {
+  padding: 0 20px;
+}
+
+
+#map-title {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 10px 22px;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+
+  border-radius: 18px;
+
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+
+  color: #1e293b;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+
+  z-index: 1000;
+
+  pointer-events: none;
+}

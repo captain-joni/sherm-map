@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Neuen Marker erstellen</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="public-container">
+    <h2>Neuen Sherm hinzufügen</h2>
+    <h5> Laengen und Breitengrade nur eine Zahl mit Punkt</h5>
+    <input type="text" id="marker-title" placeholder="Titel" required>
+    <input type="text" id="marker-description" placeholder="Beschreibung">
+    <input type="text" id="marker-lat" placeholder="Latitude" required>
+    <input type="text" id="marker-lng" placeholder="Longitude" required>
+    <input type="file" id="marker-image">
+    <button id="add-marker-btn">Marker speichern</button>
+    <div id="marker-result"></div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

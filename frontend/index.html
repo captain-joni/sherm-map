@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sherm Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Map Vollbild */
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+
+
+
+    /* Snackbar */
+    #snackbar {
+      visibility: hidden;
+      min-width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 5px;
+      padding: 10px;
+      position: fixed;
+      z-index: 1001;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Leaflet Control Style */
+    .leaflet-control-custom {
+      background: #fff;
+      padding: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="map-title">
+  Sherm Map
+</div>
+
+<div id="map"></div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+
+
+  <!-- Snackbar -->
+  <div id="snackbar"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
