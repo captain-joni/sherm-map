@@ -1,3 +1,7 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+
+
 -- Tabelle für Marker
 CREATE TABLE IF NOT EXISTS markers (
     id SERIAL PRIMARY KEY,
