@@ -203,6 +203,27 @@ function authenticateToken(req, res, next) {
 
 
 
+async function ensureAdmin() {
+  const adminUser = process.env.ADMIN_USER;
+  const adminPass = process.env.ADMIN_PASS;
+
+  const res = await pool.query('SELECT * FROM users WHERE username=$1', [adminUser]);
+  if (res.rows.length === 0) {
+    const hashed = await bcrypt.hash(adminPass, 10);
+    await pool.query(
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)',
+      [adminUser, hashed, 'admin']
+    );
+    console.log('✅ Admin-Benutzer angelegt');
+  } else {
+    console.log('Admin existiert bereits');
+  }
+}
+
+ensureAdmin();
+
+
+
 // Server starten
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

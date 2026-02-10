@@ -7,3 +7,7 @@ const pool = new Pool({
 });
 
 module.exports = pool;
+
+pool.connect()
+  .then(() => console.log('✅ DB verbunden'))
+  .catch(err => console.error('DB Verbindung fehlgeschlagen:', err));
