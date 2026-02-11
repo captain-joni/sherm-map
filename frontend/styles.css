@@ -97,7 +97,7 @@ html, body {
    MOBILE VIEW
    ========================= */
 
-@media (max-width: 768px) {
+@media (max-width: 941px) {
 
   /* Titel größer & auffälliger */
   #map-title {
