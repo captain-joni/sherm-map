@@ -92,3 +92,39 @@ html, body {
 
   pointer-events: none;
 }
+
+/* =========================
+   MOBILE VIEW
+   ========================= */
+
+@media (max-width: 768px) {
+
+  /* Titel größer & auffälliger */
+  #map-title {
+    font-size: 26px;
+    padding: 14px 28px;
+    border-radius: 22px;
+    letter-spacing: 1px;
+  }
+
+  /* Add Marker Button größer */
+  .add-marker-control {
+    min-width: 220px;
+    height: 64px;
+    font-size: 18px;
+    border-radius: 20px;
+  }
+
+  /* Leaflet Zoom Buttons größer */
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 20px !important;
+  }
+
+  /* Popup Text größer */
+  .leaflet-popup-content {
+    font-size: 16px;
+  }
+}

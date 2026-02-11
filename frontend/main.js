@@ -61,7 +61,8 @@ async function loadMarkers() {
     const markers = await res.json();
 
     markers.forEach(m => {
-      const marker = L.marker([m.lat, m.lng]).addTo(map);
+      const marker = L.marker([m.lat, m.lng], { icon: getResponsiveIcon() }).addTo(map);
+
 
       let popupContent = `<strong>${m.title || 'Marker'}</strong>`;
       if (m.image_path) {
@@ -79,3 +80,17 @@ async function loadMarkers() {
 }
 
 loadMarkers();
+
+
+function getResponsiveIcon() {
+  const isMobile = window.innerWidth <= 768;
+
+  return L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: isMobile ? [40, 64] : [25, 41],
+    iconAnchor: isMobile ? [20, 64] : [12, 41],
+    popupAnchor: isMobile ? [0, -60] : [1, -34],
+    shadowSize: isMobile ? [64, 64] : [41, 41]
+  });
+}
