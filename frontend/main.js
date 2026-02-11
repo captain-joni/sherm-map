@@ -38,7 +38,7 @@ const AddMarkerControl = L.Control.extend({
     );
 
     button.type = 'button';
-    button.textContent = 'Marker hinzufügen';
+    button.textContent = 'Sherm hinzufügen';
 
     L.DomEvent.disableClickPropagation(button);
     L.DomEvent.disableScrollPropagation(button);
@@ -60,20 +60,53 @@ async function loadMarkers() {
     const res = await fetch('/api/markers');
     const markers = await res.json();
 
-    markers.forEach(m => {
-      const marker = L.marker([m.lat, m.lng], { icon: getResponsiveIcon() }).addTo(map);
+markers.forEach(m => {
 
+  const marker = L.marker(
+    [m.lat, m.lng],
+    { icon: getResponsiveIcon() }
+  ).addTo(map);
 
-      let popupContent = `<strong>${m.title || 'Marker'}</strong>`;
-      if (m.image_path) {
-        popupContent += `<br/><img src="${m.image_path}" style="max-width:200px;margin-top:5px;margin-right:20px" />`;
-      }
+  marker.on('click', function () {
+
+    let popupContent = `<strong>${m.title || 'Marker'}</strong>`;
+
+    if (m.image_path) {
+
+      const img = new Image();
+      img.src = m.image_path;
+
+      img.onload = function () {
+
+        popupContent += `
+          <br/>
+          <img src="${m.image_path}" 
+               style="max-width:200px; margin-top:5px;" />
+        `;
+
+        if (m.description) {
+          popupContent += `<p>${m.description}</p>`;
+        }
+
+        marker.bindPopup(popupContent).openPopup();
+      };
+
+    } else {
       if (m.description) {
         popupContent += `<p>${m.description}</p>`;
       }
 
-      marker.bindPopup(popupContent);
-    });
+      marker.bindPopup(popupContent).openPopup();
+    }
+
+  });
+
+});
+
+
+
+
+
   } catch (err) {
     console.error('Marker laden fehlgeschlagen', err);
   }

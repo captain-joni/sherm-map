@@ -117,11 +117,10 @@ html, body {
 
     min-width: 64px;
     height: 64px;
-    border-radius: 50%;
+    border-radius: 5%;
     font-size: 24px;
   }
 }
-
 
   /* Leaflet Zoom Buttons größer */
   .leaflet-control-zoom a {
@@ -133,6 +132,70 @@ html, body {
 
   /* Popup Text größer */
   .leaflet-popup-content {
-    font-size: 16px;
+    font-size: 12   px;
   }
+}
+
+
+
+/* Container unten rechts */
+.floating-buttons {
+  position: fixed;
+  bottom: 25px;
+  left: 20px;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Grundbutton */
+.floating-btn {
+  min-width: 160px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+
+  border-radius: 16px;
+
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hover */
+.floating-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 35px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Zweiter Button leicht anders */
+.floating-btn.secondary {
+  background: linear-gradient(135deg, #334155, #0f172a);
+}
+
+
+@media (max-width: 768px) {
+
+  .floating-btn {
+    min-width: 200px;
+    height: 60px;
+    font-size: 17px;
+    border-radius: 20px;
+  }
+
 }
