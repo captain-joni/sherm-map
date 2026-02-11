@@ -97,17 +97,17 @@ html, body {
    MOBILE VIEW
    ========================= */
 
-@media (max-width: 941px) {
+@media (max-width: 900px) {
 
   /* Titel größer & auffälliger */
   #map-title {
-    font-size: 26px;
+    font-size: 21px;
     padding: 14px 28px;
     border-radius: 22px;
     letter-spacing: 1px;
   }
 
-@media (max-width: 768px) {
+
 
   .add-marker-control {
     position: fixed !important;
@@ -115,12 +115,12 @@ html, body {
     right: 20px;
     z-index: 1000;
 
-    min-width: 64px;
-    height: 64px;
+    min-width: 51px;
+    height: 51px;
     border-radius: 5%;
-    font-size: 24px;
+    font-size: 12px;
   }
-}
+
 
   /* Leaflet Zoom Buttons größer */
   .leaflet-control-zoom a {
@@ -152,8 +152,8 @@ html, body {
 
 /* Grundbutton */
 .floating-btn {
-  min-width: 160px;
-  height: 52px;
+  min-width: 120px;
+  height: 25px;
 
   display: flex;
   align-items: center;
@@ -161,7 +161,7 @@ html, body {
 
   text-decoration: none;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 12px;
 
   border-radius: 16px;
 
@@ -188,14 +188,11 @@ html, body {
   background: linear-gradient(135deg, #334155, #0f172a);
 }
 
-
-@media (max-width: 768px) {
-
-  .floating-btn {
-    min-width: 200px;
-    height: 60px;
+.floating-btn {
+    min-width: 120px;
+    height: 30px;
     font-size: 17px;
     border-radius: 20px;
   }
 
-}
+
