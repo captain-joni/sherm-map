@@ -26,7 +26,21 @@ services:
       ADMIN_PASS: admin
       DATABASE_URL: postgres://shermadmin:shermpass@db:5432/shermmap
       JWT_SECRET: supersecretkey
-    ports:
-      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sherm.entrypoints=http"
+      - "traefik.http.routers.sherm.rule=Host(`map.sherm.fun`)"    ##eure domain
+      - "traefik.http.routers.sherm.middlewares=redirect@file"
+      - "traefik.http.routers.sherm-secure.rule=Host(`map.sherm.fun`)"    ##eure domain
+      - "traefik.http.routers.sherm-secure.entrypoints=https"
+      - "traefik.http.routers.sherm-secure.tls=true"
+      - "traefik.http.routers.sherm-secure.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.sherm-secure.service=sherm"
+      - "traefik.http.services.sherm.loadbalancer.server.port=3000"
+      - "traefik.docker.network=proxy"
+    volumes:
+
+    #ports:
+    #  - "3000:3000"
     volumes:
       - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind      
