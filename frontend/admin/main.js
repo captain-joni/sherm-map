@@ -85,7 +85,10 @@ li.innerHTML = `
 
     <div class="action-buttons">
       ${imgButton}
-      <button class="delete-marker-btn">Löschen</button>
+      <button class="delete-marker-btn" data-id="${m.id}">
+  Löschen
+</button>
+
     </div>
   </div>
 `;
@@ -110,6 +113,8 @@ document.querySelectorAll('.validate-checkbox').forEach(cb => {
   });
 });
 
+
+
 // Bild-Button Event
 document.querySelectorAll('.view-image-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
@@ -124,7 +129,7 @@ document.querySelectorAll('.view-image-btn').forEach(btn => {
 // Löschen-Button Event
 document.querySelectorAll('.delete-marker-btn').forEach(btn => {
   btn.addEventListener('click', async (e) => {
-    const id = e.target.dataset.id;
+    const id = e.currentTarget.dataset.id;
     const confirmDelete = confirm('Bist du sicher, dass du diesen Marker löschen willst?');
     if (!confirmDelete) return;
 
@@ -153,9 +158,6 @@ document.querySelectorAll('.delete-marker-btn').forEach(btn => {
 
 
 
-
-
-
 // Modal schließen bei Klick
 document.getElementById('image-modal').addEventListener('click', () => {
   document.getElementById('image-modal').style.display = 'none';
@@ -170,7 +172,7 @@ if (data.token) {
   loginContainer.style.display = 'none';
   adminContainer.style.display = 'block';
   loadMarkers();
-}
+};
 
 // Direkt beim Laden prüfen
 window.addEventListener('DOMContentLoaded', () => {
@@ -190,8 +192,3 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   adminContainer.style.display = 'none';
   loginContainer.style.display = 'block';
 });
-
-
-
-
-

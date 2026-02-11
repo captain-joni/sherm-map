@@ -10,6 +10,8 @@ Diese Sherms sind standartmaessig NICHT in der Map zu sehen und gelten als unval
 
 ### Probleme /  To Do
 - Auch die unvalidierten Sherms und deren Bilder sind in der API abrufbar. 
+- upload begrenzen auf png/jpeg und greosse
+- loeschen sollte auch bild loeschen
 
 ### Backend
 Node JS Server.

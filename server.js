@@ -73,6 +73,7 @@ app.delete('/api/admin/markers/:id', authenticateToken, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
+    console.log("DELETE ID:", id);
     res.status(500).json({ error: 'Delete failed' });
   }
 });
