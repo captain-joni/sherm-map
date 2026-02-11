@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: shermmap
     ports:
       - "5432:5432"
+    networks:
+      - default
     volumes:
       - ./pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
@@ -26,6 +28,9 @@ services:
       ADMIN_PASS: admin
       DATABASE_URL: postgres://shermadmin:shermpass@db:5432/shermmap
       JWT_SECRET: supersecretkey
+    networks:
+      - proxy
+      - default
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sherm.entrypoints=http"
@@ -38,9 +43,11 @@ services:
       - "traefik.http.routers.sherm-secure.service=sherm"
       - "traefik.http.services.sherm.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"
-    volumes:
 
     #ports:
     #  - "3000:3000"
     volumes:
       - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind      
+networks:
+  proxy: 
+    external: true
