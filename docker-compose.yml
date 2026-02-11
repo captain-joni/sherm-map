@@ -10,7 +10,7 @@ services:
     networks:
       - default
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - /opt/nfs/sherm-map/pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
 
   backend:
@@ -47,7 +47,7 @@ services:
     #ports:
     #  - "3000:3000"
     volumes:
-      - ./uploads:/usr/src/app/uploads   # damit Uploads persistent sind      
+      - /opt/nfs/sherm-map/uploads:/usr/src/app/uploads   # damit Uploads persistent sind      
 networks:
   proxy: 
     external: true
