@@ -12,6 +12,10 @@ Diese Sherms sind standartmaessig NICHT in der Map zu sehen und gelten als unval
 - Auch die unvalidierten Sherms und deren Bilder sind in der API abrufbar. 
 - upload begrenzen auf png/jpeg und greosse
 - loeschen sollte auch bild loeschen
+- Im Admin Panel einen Button, auf externen kartenservice, der die location darstellt, (das man sehen kann wo der neue sherm ist xD)
+- buttons (unten links) auf richtige seite verweisen lassen
+- auf /public, einen link zureuck zur map
+
 
 ### Backend
 Node JS Server.
