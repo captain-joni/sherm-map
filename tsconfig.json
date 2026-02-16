@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",      // für String.replaceAll und moderne Features
+    "module": "ESNext",      // für ES Module
+    "strict": true,           // strenger Typ-Check
+    "outDir": "./frontend/public/js",  // Ausgabeordner für JS
+    "rootDir": "./frontend/public",    // Quelle der TS-Dateien
+    "esModuleInterop": true,  // falls du mal npm-Module importierst
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["frontend/public/**/*.ts"]  // welche Dateien kompiliert werden
+}

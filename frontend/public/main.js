@@ -1,9 +1,18 @@
+import { splitCoordinates } from './js/utils.js'
+
 document.getElementById('add-marker-btn').addEventListener('click', async () => {
   const title = document.getElementById('marker-title').value;
   const description = document.getElementById('marker-description').value;
-  const lat = document.getElementById('marker-lat').value;
-  const lng = document.getElementById('marker-lng').value;
   const imageFile = document.getElementById('marker-image').files[0];
+  const coord = document.getElementById('marker-coord').value;
+  let lat;
+  let lng;
+  try{
+    [lat, lng] = splitCoordinates(coord);
+    } catch(err){
+    alert('Koordinatenformat stimmt nicht!');
+    return;
+  }
 
   if (!title || !lat || !lng) {
     alert('Bitte Titel und Koordinaten ausfüllen!');
@@ -27,8 +36,7 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
       document.getElementById('marker-result').innerText = 'Marker erfolgreich erstellt! Er muss nur noch von uns geprueft werden.';
       document.getElementById('marker-title').value = '';
       document.getElementById('marker-description').value = '';
-      document.getElementById('marker-lat').value = '';
-      document.getElementById('marker-lng').value = '';
+      document.getElementById('marker-coord').value = '';
       document.getElementById('marker-image').value = '';
     } else {
       document.getElementById('marker-result').innerText = 'Fehler beim Speichern!';
