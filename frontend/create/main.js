@@ -10,7 +10,7 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
   try{
     [lat, lng] = splitCoordinates(coord);
     } catch(err){
-    alert('Koordinatenformat stimmt nicht!');
+    alert('Koordinatenformat stimmt nicht! Bitte in diesem Format 39.030386, 125.733719 ');
     return;
   }
 
