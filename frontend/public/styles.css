@@ -10,6 +10,27 @@ body {
   min-height: 100vh;
 }
 
+
+.back-button {
+  width: 100%;
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 0;
+  background: #444;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.back-button:hover {
+  background: #666;
+}
+
+
+
+
 /* Container */
 #public-container {
   background: #fff;
