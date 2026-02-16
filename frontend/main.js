@@ -44,7 +44,7 @@ const AddMarkerControl = L.Control.extend({
     L.DomEvent.disableScrollPropagation(button);
 
     button.addEventListener('click', () => {
-      window.location.href = '/public';
+      window.location.href = '/create';
     });
 
     return button;
