@@ -46,3 +46,14 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
     document.getElementById('marker-result').innerText = 'Serverfehler!';
   }
 });
+
+[document.getElementById('marker-title'),
+  document.getElementById('marker-description'),
+  document.getElementById('marker-coord')]
+  .forEach(element => {
+  element.addEventListener("keydown", (event) => {
+  if(!(event.key === "Enter")) // keine ahnung ob man hier noch filtern sollte, ob alles ausgefüllt ist, prob net
+  {return};
+  document.getElementById('add-marker-btn').click()
+})
+});
