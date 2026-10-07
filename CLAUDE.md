@@ -12,7 +12,33 @@ Guidance for Claude Code sessions in this repo.
 
 UI text and code comments are in German. Keep new user-facing strings German. Planning docs are in English.
 
-## Current stack (before the rebuild)
+## Rebuild (branch `rebuild`)
+
+The v2 code lives next to the v1 app until the cut-over. `main` stays the deployable v1 app.
+
+- **npm workspaces**: `shared/` (`@sherm/shared`, zod schemas such as the export format) and `backend/` (`@sherm/backend`). The root `package.json` still carries the v1 dependencies.
+- **TypeScript is run with `tsx`**; there's no build step. `npm run typecheck` runs tsc (TS 7) with `noEmit`.
+  - Imports use `.ts` extensions.
+  - Use erasable syntax only: no enums, no namespaces, no parameter properties.
+  - ESM (`"type": "module"`).
+- **Migrations**: `db/migrations/NNNN_name.sql`, applied by `npm run migrate -w backend`. **Never edit an applied migration**; the runner checks checksums. Add a new file instead.
+- **v2 schema**: `markers.status` (pending/approved/rejected/hidden) replaces `validated`.
+  - Photos live in the `photos` table and are stored as `uploads/{original,display,thumb}/<storage_key>`. `legacy_path` points to the v1 file until it has been reprocessed.
+  - `country_code` is set by a trigger from the `country_parts` table.
+  - Like and "still there" counters are maintained by a trigger on `reactions`.
+- **Scripts**:
+  - backend: `npm run {export,import,reprocess-images,load-countries} -w backend`
+  - host, bash: `scripts/{backup,restore,restore-test}.sh`
+
+  All are documented in `docs/operations.md`.
+- **Tests**: `npm test -w backend`. Integration tests need a PostGIS server; they create and drop their own databases:
+  ```bash
+  docker run -d --rm --name sherm-pg -e POSTGRES_PASSWORD=t -p 127.0.0.1:55432:5432 postgis/postgis:15-3.3
+  TEST_DATABASE_URL=postgres://postgres:t@127.0.0.1:55432/postgres npm test -w backend
+  ```
+- **Local Node is 20** (end of life). Everything runs on it via tsx, and the Docker target is Node 24.
+
+## Current stack (v1, before the rebuild)
 
 - **Backend**: Node 20 + Express 5, CommonJS, all in `server.js`.
   - `db.js` exports a `pg` Pool built from `DATABASE_URL`.

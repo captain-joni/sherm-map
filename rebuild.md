@@ -1,6 +1,11 @@
 # Sherm Map Rebuild Plan
 
-Status: **planned**, nothing in here is implemented yet. The cleanup of the current app (security fixes, env-based secrets, healthchecks) is done and is described in `CLAUDE.md`. This plan builds on that state.
+Status:
+- **Phase 0:** done. Production runs the cleaned-up v1 app.
+- **Phase 1:** code done on branch `rebuild` and tested against a fake legacy DB. Still to do: the dress rehearsal with real prod data (1.5), and answers to open questions 1 and 2.
+- **Phases 2–7:** not started.
+
+Rebuild work happens on the **`rebuild` branch**. `main` stays deployable for hotfixes to the running v1 app.
 
 Work through the phases **in order**. Phase 1 (data) has to be finished before anything touches production data. Each phase ends with a "Done when" checklist; tick it off before moving on.
 
@@ -19,12 +24,13 @@ Work through the phases **in order**. Phase 1 (data) has to be finished before a
 These are implementation details. Change them if there's a reason, but write the reason down here.
 
 - **Validation**: `zod` schemas, shared between backend and frontend in `shared/`.
-- **Migrations**: `node-pg-migrate` with plain `.sql` migrations in `db/migrations/`. They run automatically on backend start. `db/init/01_schema.sql` is no longer used for new installs.
+- **Runtime**: TypeScript runs through `tsx`, with no build step, and `tsc` is only used for typechecking (`npm run typecheck`). Code sticks to erasable syntax (no enums or namespaces), so it can later run on Node's native type stripping. The Docker image moves to Node 24 LTS; Node 20 is end of life.
+- **Migrations**: a small runner of our own (`backend/src/db/migrate.ts`) over plain `.sql` files in `db/migrations/`. It uses an advisory lock, one transaction per file, and checksums that refuse edited migrations. It replaced the planned `node-pg-migrate`, because ~80 lines we fully control beat a dependency here. Migrations will run automatically on backend start (Phase 2). `db/init/01_schema.sql` is no longer used for new installs.
 - **Images**: `sharp` on the server. Every upload is re-encoded, which strips EXIF (phones put the **GPS position and device info** into photos) and destroys any payload hidden in the file. Each upload produces:
   - `original/` at max 4096 px, high-quality JPEG, never public. This is the copy for Instagram.
   - `display/` at 1600 px WebP.
   - `thumb/` at 400 px WebP.
-- **Countries**: Natural Earth admin-0 polygons loaded into a PostGIS `countries` table. The country is computed **offline** with `ST_Contains`, falling back to the nearest polygon within 25 km for coast and border sherms. No external geocoding API, no rate limits, and it works for old data too.
+- **Countries**: Natural Earth **1:10m** admin-0 polygons (1:50m misses small islands such as Helgoland), pinned to v5.1.2 and checked by sha256. They're split with `ST_Subdivide` into `country_parts` so lookups are fast. A trigger sets `markers.country_code` on insert and on location change: the containing polygon, otherwise the nearest within 25 km. No external geocoding API, no rate limits, and it works for old data too.
 - **Place search** (map search bar): the Photon API (photon.komoot.io), proxied through our backend at `/api/geocode` with caching, so the CSP stays tight and we respect its fair use.
 - **Admin auth**: an httpOnly, `SameSite=Strict` session cookie instead of a JWT in localStorage. An XSS bug can then no longer steal admin sessions. Sessions are stored in Postgres, so a user can be logged out or disabled server-side.
 - **Anonymous identity** for likes, "still there" and reports: a random device ID kept in localStorage, plus a **salted hash of the IP**. Raw IPs are never stored (DSGVO).
@@ -34,17 +40,21 @@ These are implementation details. Change them if there's a reason, but write the
 ## Target repository layout
 
 ```
-backend/            Express API (TypeScript)
-  src/routes/       public.ts, admin.ts, auth.ts, share.ts
-  src/services/     images.ts, countries.ts, audit.ts, backup.ts
-  src/db/           pool, queries
-frontend/           Vite project, two entries
+backend/            Express API (TypeScript, npm workspace @sherm/backend)
+  src/routes/       public.ts, admin.ts, auth.ts, share.ts          (Phase 2)
+  src/services/     storage.ts, images.ts, photos.ts, audit.ts, ...
+  src/db/           pool.ts, migrate.ts
+  src/scripts/      export.ts, import.ts, reprocess-images.ts, load-countries.ts
+  test/             vitest (integration tests need TEST_DATABASE_URL)
+web/                Vite project, two entries (Phase 3). Not `frontend/`, which is the v1 app until cut-over.
   src/map/          public PWA
   src/admin/        admin app
-shared/             zod schemas + types used by both
-db/migrations/      0001_baseline.sql, 0002_..., ...
-scripts/            backup.sh, restore.sh, export.ts, import.ts, reprocess-images.ts
-docs/               operations.md (backup/restore/deploy runbook)
+shared/             zod schemas + types used by both (npm workspace @sherm/shared)
+db/migrations/      0001_baseline.sql, 0002_v2_core.sql, 0003_countries.sql, ...
+scripts/            backup.sh, restore.sh, restore-test.sh, lib.sh (bash, run on the host)
+docs/               operations.md (backup/restore/export/migration runbook)
+
+server.js, db.js, frontend/   the v1 app, deleted at cut-over (Phase 7)
 ```
 
 ---
@@ -80,7 +90,7 @@ Goal: production runs the cleaned-up current app, and there is a verified backup
 Goal: a schema that can grow safely, and backup, restore, export and import that are boring and tested.
 
 ### 1.1 Migrations
-- `0001_baseline.sql` is exactly the current schema, written with `IF NOT EXISTS`. Existing prod is marked as "at 0001" without running anything; a new install runs it.
+- `0001_baseline.sql` is exactly the current schema, written with `IF NOT EXISTS`. On existing prod it runs as a no-op and gets recorded; on a new install it creates the schema.
 - From here on, every schema change is a new numbered migration, and old migrations are never edited.
 
 ### 1.2 New schema (`0002_...` onward)
@@ -144,7 +154,7 @@ Indexes:
 - `reports(status)`
 
 ### 1.3 Backup and restore
-- `scripts/backup.sh` writes **one file** per run, `sherm-backup-<timestamp>.tar.gz`, containing:
+- `scripts/backup.sh` writes **one file** per run, `sherm-backup-<timestamp>.tar.gz` (plus a `.sha256` next to it), containing:
   - `db.dump` (`pg_dump -Fc`)
   - `uploads/` (all image variants)
   - `manifest.json` (schema version, row counts per table, number of files, sha256 of every file, app version)
@@ -155,22 +165,28 @@ Indexes:
 
 ### 1.4 Portable export and import
 The second safety net works independently of the DB version and lets data move between old and new app versions or servers.
-- `scripts/export.ts` writes `sherm-export-<timestamp>.zip` containing:
+- `npm run export -w backend` writes `sherm-export-<timestamp>.tar.gz` containing:
   - `sherms.geojson`: every marker with all fields and its status, plus photo references
   - `photos/` (originals)
   - `audit_log.jsonl`, `reports.jsonl`
   - `manifest.json`
-- `scripts/import.ts` reads that zip into an empty or existing DB. It is idempotent: rows are matched by a stable `uuid` column added in 1.2.
+- `npm run import -w backend -- <file>` reads that archive into an empty or existing DB. It is idempotent: rows are matched by a stable `uuid` column added in 1.2.
 - The same export is available as a download in the admin UI (admin role only, written to the audit log).
 
 ### 1.5 Dress rehearsal
 Restore the Phase 0 prod backup locally, run all migrations, re-process the images, export, then import into a fresh DB. Compare the counts at every step.
 
 **Done when:**
-- Migrations run on a copy of the prod data without errors.
-- Backup and restore work, and the restore test has passed at least once.
-- Export, import into an empty DB and export again gives the same data.
-- `docs/operations.md` describes all of this step by step.
+- [x] Migrations, backup, restore, restore test, export and import work against a fake legacy DB:
+  - 3,000 sherms
+  - images with EXIF, transparency, corrupt and missing files
+  - reactions, reports and audit entries
+
+  Covered by `backend/test/roundtrip.test.ts` and manual runs on 2026-10-07.
+- [x] Export, import into an empty DB and export again gives the same data. The only expected difference is `reviewed_by`, since users aren't exported.
+- [x] `docs/operations.md` describes all of this step by step.
+- [ ] Migrations run without errors on a **copy of the real prod data** (1.5 dress rehearsal; needs a prod backup).
+- [ ] Nightly backup cron and off-site copy are set up on the server (open questions 1 and 2).
 
 ---
 

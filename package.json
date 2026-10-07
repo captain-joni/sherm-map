@@ -7,7 +7,10 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "build": "tsc",
-    "check": "node --check server.js && node --check db.js"
+    "check": "node --check server.js && node --check db.js",
+    "typecheck": "npm run typecheck --workspaces",
+    "test:v2": "npm test -w backend",
+    "migrate": "npm run migrate -w backend"
   },
   "author": "",
   "license": "ISC",
@@ -23,6 +26,14 @@
     "pg": "^8.18.0"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
-  }
+    "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  },
+  "workspaces": [
+    "shared",
+    "backend"
+  ]
 }
