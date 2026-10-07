@@ -1,13 +1,78 @@
 # Gemeinsame Funktionen für backup.sh, restore.sh und restore-test.sh (wird per source geladen)
 # Alle DB-Befehle laufen im Postgres-Container, Benutzer und DB kommen aus dessen Umgebung.
-#   DB_CONTAINER   Containername; leer = "docker compose exec db" im Repo-Verzeichnis
+#
+# Einstellungen (Umgebungsvariable > Zeile in <repo>/.env > Default):
+#   BACKUP_DIR            Zielordner der Backups (Default: <repo>/backups; relativ = relativ zum Repo)
+#   UPLOADS_DIR           Upload-Ordner auf dem Host (Default: /opt/nfs/sherm-map/uploads)
+#   KEEP_DAILY/KEEP_WEEKLY/KEEP_MONTHLY   Aufbewahrung (Default 7/4/6)
+#   BACKUP_POST_HOOK      Befehl nach jedem Backup, bekommt den Dateipfad als $1 (z.B. Kopie woanders hin)
+#   NOTIFY_WEBHOOK_URL    Webhook (z.B. n8n), bekommt bei Fehlern ein JSON (siehe notify unten)
+#   NOTIFY_WEBHOOK_TOKEN  optional, wird als "Authorization: Bearer <token>" mitgeschickt
+#   BACKUP_NOTIFY_SUCCESS true = auch Erfolge melden (für "seit 26 h kein Backup"-Alarm in n8n)
+#   DB_CONTAINER          Containername statt "docker compose exec db" (nur als Umgebungsvariable)
 
+set -o errtrace
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# Nur die Backup-Einstellungen aus der .env lesen (nicht die ganze Datei ausführen)
+load_config() {
+  local file=${SHERM_ENV_FILE:-$REPO_DIR/.env} line key value
+  [[ -f $file ]] || return 0
+  while IFS= read -r line || [[ -n $line ]]; do
+    [[ $line =~ ^[[:space:]]*(BACKUP_DIR|UPLOADS_DIR|KEEP_DAILY|KEEP_WEEKLY|KEEP_MONTHLY|BACKUP_POST_HOOK|NOTIFY_WEBHOOK_URL|NOTIFY_WEBHOOK_TOKEN|BACKUP_NOTIFY_SUCCESS|POSTGIS_IMAGE)=(.*)$ ]] || continue
+    key=${BASH_REMATCH[1]}
+    value=${BASH_REMATCH[2]%$'\r'}
+    [[ $value =~ ^\"(.*)\"$ || $value =~ ^\'(.*)\'$ ]] && value=${BASH_REMATCH[1]}
+    [[ -n ${!key+x} ]] && continue # Umgebung gewinnt
+    printf -v "$key" '%s' "$value"
+  done < "$file"
+}
+load_config
+
 UPLOADS_DIR=${UPLOADS_DIR:-/opt/nfs/sherm-map/uploads}
 BACKUP_DIR=${BACKUP_DIR:-$REPO_DIR/backups}
+[[ $BACKUP_DIR == /* ]] || BACKUP_DIR=$(realpath -m "$REPO_DIR/$BACKUP_DIR")
 
-log() { printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
-die() { log "❌ $*"; exit 1; }
+LAST_STEP=start
+log() { LAST_STEP=$*; printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
+LAST_ERROR=
+die() { LAST_ERROR=$*; log "❌ $*"; exit 1; }
+
+json_escape() {
+  local s=$1
+  s=${s//\\/\\\\}; s=${s//\"/\\\"}; s=${s//$'\t'/\\t}; s=${s//$'\r'/}; s=${s//$'\n'/\\n}
+  printf '%s' "$s"
+}
+
+# notify <event> <message> [datei]: POST an NOTIFY_WEBHOOK_URL, z.B.
+#   {"source":"sherm-map","event":"backup.failed","host":"server1","message":"...","file":null,"at":"2026-10-07T03:15:02Z"}
+notify() {
+  [[ -n ${NOTIFY_WEBHOOK_URL:-} ]] || return 0
+  local file=null
+  [[ -n ${3:-} ]] && file="\"$(json_escape "$3")\""
+  local body
+  body=$(printf '{"source":"sherm-map","event":"%s","host":"%s","message":"%s","file":%s,"at":"%s"}' \
+    "$(json_escape "$1")" "$(json_escape "$(hostname)")" "$(json_escape "$2")" "$file" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
+  local headers=(-H 'Content-Type: application/json')
+  [[ -n ${NOTIFY_WEBHOOK_TOKEN:-} ]] && headers+=(-H "Authorization: Bearer $NOTIFY_WEBHOOK_TOKEN")
+  curl -fsS -m 15 --retry 2 -X POST "${headers[@]}" -d "$body" "$NOTIFY_WEBHOOK_URL" > /dev/null \
+    || log "⚠️  Benachrichtigung an den Webhook fehlgeschlagen"
+}
+
+# Aufräumen am Ende und bei Fehlern automatisch melden.
+# Skripte registrieren Aufräumbefehle mit at_exit und setzen NOTIFY_EVENT (z.B. "backup").
+EXIT_CMDS=()
+at_exit() { EXIT_CMDS+=("$1"); }
+_on_exit() {
+  local code=$?
+  for cmd in "${EXIT_CMDS[@]}"; do eval "$cmd" || true; done
+  if [[ $code -ne 0 && -n ${NOTIFY_EVENT:-} ]]; then
+    notify "$NOTIFY_EVENT.failed" "${LAST_ERROR:-Abbruch mit Exit-Code $code}"
+  fi
+  exit "$code"
+}
+trap _on_exit EXIT
+trap 'LAST_ERROR=${LAST_ERROR:-"Fehler bei „$LAST_STEP“: $BASH_COMMAND"}' ERR
 
 db_exec() {
   if [[ -n "${DB_CONTAINER:-}" ]]; then

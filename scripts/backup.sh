@@ -1,23 +1,18 @@
 #!/usr/bin/env bash
 # Vollbackup in EINER Datei: DB-Dump (pg_dump -Fc), alle Uploads, Prüfsummen und Manifest.
 #   scripts/backup.sh            ->  $BACKUP_DIR/sherm-backup-<UTC-Zeit>.tar.gz (+ .sha256)
-#
-# Umgebung (alles optional):
-#   BACKUP_DIR        Zielordner (Default: <repo>/backups)
-#   UPLOADS_DIR       Upload-Ordner auf dem Host (Default: /opt/nfs/sherm-map/uploads)
-#   DB_CONTAINER      Postgres-Container statt "docker compose exec db"
-#   KEEP_DAILY=7 KEEP_WEEKLY=4 KEEP_MONTHLY=6   Aufbewahrung, ältere Backups werden gelöscht
-#   BACKUP_POST_HOOK  Befehl, der danach mit dem Pfad der Datei aufgerufen wird, z.B. für die Kopie
-#                     auf einen anderen Server: BACKUP_POST_HOOK="rclone copy --include 'sherm-backup-*' ... "
+# Einstellungen (BACKUP_DIR, Aufbewahrung, Webhook, ...) per Umgebung oder in der .env, siehe scripts/lib.sh.
+# Bei Fehlern geht eine Meldung an NOTIFY_WEBHOOK_URL (event "backup.failed").
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
+NOTIFY_EVENT=backup
 
 [[ -d $UPLOADS_DIR ]] || die "UPLOADS_DIR existiert nicht: $UPLOADS_DIR"
 mkdir -p "$BACKUP_DIR"
 ts=$(date -u +%Y%m%d-%H%M%S)
 out="$BACKUP_DIR/sherm-backup-$ts.tar.gz"
 work=$(mktemp -d "$BACKUP_DIR/.work-XXXXXX")
-trap 'rm -rf "$work" "$out.partial"' EXIT
+at_exit 'rm -rf "$work" "$out.partial"'
 
 # 1. Datenbank zuerst: Dateien, die währenddessen hochgeladen werden, landen dann höchstens zusätzlich im Backup
 log "DB-Dump"
@@ -75,4 +70,8 @@ prune
 if [[ -n ${BACKUP_POST_HOOK:-} ]]; then
   log "Post-Hook: $BACKUP_POST_HOOK"
   bash -c "$BACKUP_POST_HOOK \"\$1\"" _ "$out" || die "Post-Hook fehlgeschlagen"
+fi
+
+if [[ ${BACKUP_NOTIFY_SUCCESS:-false} == true ]]; then
+  notify backup.succeeded "$(basename "$out") ($(du -h "$out" | cut -f1), $files Dateien)" "$out"
 fi

@@ -20,7 +20,7 @@ done
 [[ -n $file ]] || die "Nutzung: scripts/restore.sh <backup.tar.gz> [--force] [--yes]"
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+at_exit 'rm -rf "$work"'
 verify_backup "$file" "$work"
 
 current=$(table_counts)
