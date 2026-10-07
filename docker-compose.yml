@@ -39,6 +39,8 @@ services:
       HASH_SECRET: ${HASH_SECRET:?HASH_SECRET fehlt in .env}
       ADMIN_USER: ${ADMIN_USER:-}
       ADMIN_PASS: ${ADMIN_PASS:-}
+      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}     # neue Sherms/Meldungen an z.B. n8n
+      NOTIFY_WEBHOOK_TOKEN: ${NOTIFY_WEBHOOK_TOKEN:-}
     networks:
       - proxy
       - default

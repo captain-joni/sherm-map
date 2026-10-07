@@ -14,15 +14,23 @@ import { getPublicSherm, listMapSherms, PUBLIC_WHERE } from '../services/sherms.
 import { deletePhotoFiles } from '../services/storage.ts';
 import { assertImage, imageUpload } from '../services/uploads.ts';
 import { inTransaction } from '../services/audit.ts';
+import type { Notify } from '../services/notify.ts';
+
+const REPORT_REASON_LABELS: Record<string, string> = {
+  privacy: 'Person/Kennzeichen erkennbar', illegal: 'Illegal', offensive: 'Anstößig',
+  spam: 'Spam', wrong_location: 'Falscher Ort', other: 'Anderes',
+};
 
 interface Deps {
   pool: pg.Pool;
+  publicUrl: string;
+  notify: Notify;
   hasher: Hasher;
   limits: ReturnType<typeof createRateLimits>;
   geocode: Geocoder;
 }
 
-export function publicRouter({ pool, hasher, limits, geocode }: Deps): Router {
+export function publicRouter({ pool, publicUrl, notify, hasher, limits, geocode }: Deps): Router {
   const router = Router();
 
   // Die öffentlichen Lesezugriffe dürfen auch andere Seiten nutzen (keine Cookies im Spiel)
@@ -93,6 +101,7 @@ export function publicRouter({ pool, hasher, limits, geocode }: Deps): Router {
         return rows[0];
       });
       res.status(201).json(created);
+      void notifySubmitted(created.id, input.title, storageKey !== null);
     } catch (err) {
       if (storageKey) await deletePhotoFiles(storageKey);
       // Gleichzeitige Wiederholung mit derselben uuid
@@ -106,6 +115,20 @@ export function publicRouter({ pool, hasher, limits, geocode }: Deps): Router {
       throw err;
     }
   });
+
+  async function notifySubmitted(id: number, title: string, hasPhoto: boolean) {
+    const { rows } = await pool.query(`
+      SELECT c.name_de AS country, (SELECT count(*)::int FROM markers WHERE status = 'pending' AND deleted_at IS NULL) AS pending
+      FROM markers m LEFT JOIN countries c ON c.code = m.country_code WHERE m.id = $1`, [id]).catch(() => ({ rows: [] }));
+    const country = rows[0]?.country ?? null;
+    const pending = rows[0]?.pending ?? null;
+    notify('sherm.submitted', {
+      message: `Neuer Sherm zum Prüfen: „${title}“${country ? ` (${country})` : ''}${pending ? ` – ${pending} warten insgesamt` : ''}`,
+      url: `${publicUrl}/admin/pruefen`,
+      sherm: { id, title, country, has_photo: hasPhoto, admin_url: `${publicUrl}/admin/sherms/${id}` },
+      pending_count: pending,
+    });
+  }
 
   router.post('/sherms/:id/reactions', limits.reaction, async (req, res) => {
     const { id } = params(req, idParam);
@@ -147,18 +170,27 @@ export function publicRouter({ pool, hasher, limits, geocode }: Deps): Router {
     const { reason, comment } = body(req, reportInput);
     const reporter = hasher.ip(req);
 
-    await inTransaction(pool, async client => {
+    const title = await inTransaction(pool, async client => {
       await assertPublic(client, id);
       // Pro Person und Sherm nur eine offene Meldung
       const open = await client.query(
         `SELECT 1 FROM reports WHERE marker_id = $1 AND reporter_hash = $2 AND status = 'open'`, [id, reporter]);
-      if (open.rowCount) return;
+      if (open.rowCount) return null;
       await client.query(
         'INSERT INTO reports (marker_id, reason, comment, reporter_hash) VALUES ($1, $2, $3, $4)',
         [id, reason, comment, reporter]
       );
+      return (await client.query('SELECT title FROM markers WHERE id = $1', [id])).rows[0].title as string;
     });
     res.status(201).json({ success: true });
+    if (title) {
+      notify('report.created', {
+        message: `Sherm gemeldet: „${title}“ – Grund: ${REPORT_REASON_LABELS[reason]}${comment ? ` („${comment}“)` : ''}`,
+        url: `${publicUrl}/admin/meldungen`,
+        sherm: { id, title, admin_url: `${publicUrl}/admin/sherms/${id}` },
+        report: { reason, comment },
+      });
+    }
   });
 
   router.get('/geocode', limits.geocode, async (req, res) => {

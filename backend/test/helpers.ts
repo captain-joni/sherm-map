@@ -45,8 +45,10 @@ export async function setupTestApp({ rateLimitScale = 100, webDist }: { rateLimi
   await ensureAdmin(pool, cfg);
 
   const geocodeCalls: string[] = [];
+  const notifications: { event: string; data: Record<string, unknown> }[] = [];
   const app = createApp({
     pool, cfg, rateLimitScale,
+    notify: (event, data) => { notifications.push({ event, data }); },
     geocode: async q => {
       geocodeCalls.push(q);
       return [{ name: 'Heidelberg', detail: 'Baden-Württemberg, Deutschland', lat: 49.4, lng: 8.7 }];
@@ -54,7 +56,7 @@ export async function setupTestApp({ rateLimitScale = 100, webDist }: { rateLimi
   });
 
   return {
-    app, pool, cfg, uploads, geocodeCalls,
+    app, pool, cfg, uploads, geocodeCalls, notifications,
     async cleanup() {
       await pool.end();
       await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);

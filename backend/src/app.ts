@@ -13,6 +13,7 @@ import { mediaRouter } from './routes/media.ts';
 import { publicRouter } from './routes/public.ts';
 import { createGeocoder, type Geocoder } from './services/geocode.ts';
 import { makeHasher } from './services/hashing.ts';
+import { createNotifier, type Notify } from './services/notify.ts';
 import { indexHtmlLoader, injectOg, ogTags } from './services/share.ts';
 import { getPublicSherm } from './services/sherms.ts';
 
@@ -21,9 +22,10 @@ export interface AppDeps {
   cfg: ServerConfig;
   geocode?: Geocoder; // in Tests ersetzbar
   rateLimitScale?: number;
+  notify?: Notify; // in Tests ersetzbar
 }
 
-export function createApp({ pool, cfg, geocode, rateLimitScale = 1 }: AppDeps): express.Express {
+export function createApp({ pool, cfg, geocode, rateLimitScale = 1, notify }: AppDeps): express.Express {
   const app = express();
   if (cfg.trustProxy) app.set('trust proxy', cfg.trustProxy);
 
@@ -44,7 +46,8 @@ export function createApp({ pool, cfg, geocode, rateLimitScale = 1 }: AppDeps): 
   app.use(mediaRouter(pool));
   app.use('/api/admin', adminRouter(pool, cfg));
   app.use('/api', publicRouter({
-    pool, hasher, limits,
+    pool, hasher, limits, publicUrl: cfg.publicUrl,
+    notify: notify ?? createNotifier(cfg.notifyWebhookUrl, cfg.notifyWebhookToken),
     geocode: geocode ?? createGeocoder(cfg.geocoderUrl, `ShermMap/2.0 (${cfg.publicUrl})`),
   }));
   app.use('/api', apiNotFound);

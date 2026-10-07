@@ -31,6 +31,8 @@ const serverEnv = z.object({
   WEB_DIST: z.string().default(path.join(REPO_ROOT, 'web', 'dist')),
   BACKUP_DIR: z.string().default(path.join(REPO_ROOT, 'backups')),
   GEOCODER_URL: z.url().default('https://photon.komoot.io/api/'),
+  NOTIFY_WEBHOOK_URL: z.union([z.url(), z.literal('')]).optional(),  // z.B. n8n, siehe services/notify.ts
+  NOTIFY_WEBHOOK_TOKEN: z.string().optional(),
 });
 
 export type ServerConfig = ReturnType<typeof loadServerConfig>;
@@ -50,6 +52,8 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env) {
     webDist: path.resolve(e.WEB_DIST),
     backupDir: path.resolve(e.BACKUP_DIR),
     geocoderUrl: e.GEOCODER_URL,
+    notifyWebhookUrl: e.NOTIFY_WEBHOOK_URL || null,
+    notifyWebhookToken: e.NOTIFY_WEBHOOK_TOKEN || null,
     sessionIdleDays: 7,
     sessionMaxDays: 30,
   };

@@ -79,10 +79,26 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       expect(second.body.id).toBe(first.body.id);
     });
 
+    it('benachrichtigt Moderatoren über neue Sherms, aber nicht bei Wiederholung', async () => {
+      env.notifications.length = 0;
+      const uuid = randomUUID();
+      const res = await submit({ uuid, title: 'Benachrichtigung' });
+      await submit({ uuid });
+      await new Promise(r => setTimeout(r, 200)); // Benachrichtigung läuft nach der Antwort
+      expect(env.notifications).toHaveLength(1);
+      expect(env.notifications[0]).toMatchObject({
+        event: 'sherm.submitted',
+        data: { url: 'http://localhost:3000/admin/pruefen', sherm: { id: res.body.id, country: 'Deutschland', has_photo: true } },
+      });
+      expect(env.notifications[0]!.data.message).toMatch(/^Neuer Sherm zum Prüfen: „Benachrichtigung“ \(Deutschland\) – \d+ warten insgesamt$/);
+    });
+
     it('speichert bei ausgefülltem Honeypot nichts', async () => {
       const before = (await env.pool.query('SELECT count(*)::int AS n FROM markers')).rows[0].n;
+      env.notifications.length = 0;
       const res = await submit({ website: 'http://spam.example' });
       expect(res.status).toBe(202);
+      expect(env.notifications).toHaveLength(0);
       expect((await env.pool.query('SELECT count(*)::int AS n FROM markers')).rows[0].n).toBe(before);
     });
 
@@ -176,8 +192,11 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
     it('nimmt Meldungen an, eine offene pro Person, und Admins erledigen sie', async () => {
       const { id } = await submitAndApprove();
       const report = () => request(env.app).post(`/api/sherms/${id}/reports`).send({ reason: 'privacy', comment: 'Gesicht' });
+      env.notifications.length = 0;
       expect((await report()).status).toBe(201);
       expect((await report()).status).toBe(201);
+      expect(env.notifications.map(n => n.event)).toEqual(['report.created']); // die doppelte nicht
+      expect(env.notifications[0]!.data.message).toContain('Grund: Person/Kennzeichen erkennbar („Gesicht“)');
       expect((await request(env.app).post(`/api/sherms/${id}/reports`).send({ reason: 'quatsch' })).status).toBe(400);
 
       const list = await admin.get('/api/admin/reports');
