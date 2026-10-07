@@ -345,6 +345,19 @@ Layout: an app shell with navigation (sidebar on desktop, bottom tabs on mobile)
 
 ---
 
+## Decisions on the open questions (2026-10-07)
+
+1. **Database stays on NFS.** Backups should go to different storage (`BACKUP_DIR`, see docs/operations.md).
+2. **No off-site backup target is available.** `BACKUP_POST_HOOK` is there if one appears later. Until then, copy backups to a laptop or USB disk now and then.
+3. **Alerts via webhook (n8n).** `NOTIFY_WEBHOOK_URL`; the scripts report `backup.failed`/`restore_test.failed` and optionally successes. → implemented
+4. **Duplicate warning:** still open. The review queue already shows nearby sherms as blue pins and as a "nächster … m entfernt" note.
+5. **No automatic hiding** after reports.
+6. **Notify moderators about new sherms:** via the same webhook (`sherm.submitted`, plus `report.created`). → implemented
+7. **No public stats page.**
+8. **English is mandatory** for the public app. → implemented (German/English, browser detection, switch in the info dialog). The admin panel stays German.
+
+Ideas still being discussed: a "navigate there" button, a "my sherms" list on the phone, a heatmap view.
+
 ## Open questions and suggested ideas (not yet confirmed)
 
 Answer these before or during the phase they belong to. Unconfirmed ideas don't get built.

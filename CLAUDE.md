@@ -50,6 +50,8 @@ npm workspaces, all TypeScript, ESM:
   - DOM is built with `h()` from `web/src/lib/dom.ts`, textContent only, never innerHTML with data. Use `replace()` when children can be null.
   - **Import values from `@sherm/shared/constants`, types via `import type` from `@sherm/shared`.** Otherwise zod lands in the bundle, and `npm run build` fails on purpose.
   - Leaflet: import `L` from `web/src/map/leaflet.ts` (it sets the global for markercluster). Create maps on attached elements, or watch them with a ResizeObserver; otherwise their height is 0.
+- **i18n:** the public app (`web/src/map`, `web/src/lib`) is German + English via `t()` from `web/src/lib/i18n.ts`. New texts need both languages (the type enforces it). Never import i18n into `lib/queue.ts`; it also runs in the service worker. API errors have a `code` (`ERROR_CODES` in shared constants) that the app translates. The admin panel is German only.
+- **Notifications:** `NOTIFY_WEBHOOK_URL` (e.g. n8n) gets JSON events from the backend (`sherm.submitted`, `report.created`, `services/notify.ts`) and from the backup scripts (`backup.failed`, …).
 - **Security:**
   - The CSP lives in `backend/src/http/security.ts`. Tile hosts must be in `img-src` **and** `connect-src`, because the service worker fetches tiles.
   - Keep `referrerPolicy: strict-origin-when-cross-origin`: OSM returns 403 tiles without a Referer.

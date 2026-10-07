@@ -17,43 +17,84 @@ Use **backups** to get the same server back. Use the **export** to move data bet
 
 ## Backups
 
-### Manual backup
+### How the backup works
+
+`scripts/backup.sh` runs on the server, in the repo directory, normally once a night from cron:
+
+1. **Database:** `pg_dump` runs inside the Postgres container and writes a complete dump (custom format). Then `pg_restore -l` checks that the dump is readable. The database keeps running the whole time; `pg_dump` sees one consistent snapshot.
+2. **Row counts:** every table is counted and written to `tables.json`. The restore test later compares against these numbers.
+3. **Uploads:** every file in the upload folder gets a sha256 checksum (`uploads.sha256`). The database is dumped *first*, so a photo uploaded during the backup can only be extra, never missing.
+4. **One file:** dump, uploads, checksums and a `manifest.json` (schema version, dump checksum, number of files) are packed into **`sherm-backup-<UTC time>.tar.gz`**. It's written as `.partial` and only renamed when complete, plus a `.sha256` file next to it, so a half-written backup never looks finished.
+5. **Retention:** old backups are deleted. Kept are the newest per day for 7 days, per week for 4 weeks and per month for 6 months, about 17 files in total.
+6. **Optional:** `BACKUP_POST_HOOK` runs with the file path, e.g. a copy to a USB disk or a second disk.
+7. **Reporting:** on any error, a message goes to the webhook (see *Notifications* below). Optionally successes are reported too.
+
+`scripts/restore-test.sh` (monthly) proves that the newest backup really can be restored: it checks all checksums, restores the dump into a throwaway container and compares every row count. Production isn't touched.
+
+Both scripts work with the old (v1) and the new schema.
+
+### Settings
+
+Each setting can be given as an **environment variable** or as a **line in `.env`** in the repo directory (the same file docker compose uses). The environment wins. The scripts read only these keys from `.env`; the file isn't executed.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | Where backups go. Relative paths are relative to the repo. Docker compose uses the same value to show the backup status in the admin panel |
+| `UPLOADS_DIR` | `/opt/nfs/sherm-map/uploads` | Upload folder on the host |
+| `KEEP_DAILY` / `KEEP_WEEKLY` / `KEEP_MONTHLY` | 7 / 4 / 6 | Retention |
+| `BACKUP_POST_HOOK` | (empty) | Command after each successful backup, gets the file path as `$1` |
+| `NOTIFY_WEBHOOK_URL` | (empty) | Webhook for error messages (e.g. n8n) |
+| `NOTIFY_WEBHOOK_TOKEN` | (empty) | Sent as `Authorization: Bearer <token>` |
+| `BACKUP_NOTIFY_SUCCESS` | `false` | `true` = also report successful backups and restore tests |
+| `DB_CONTAINER` | (empty) | Environment only: use this container instead of `docker compose exec db` |
+
+Example `.env` lines:
 
 ```bash
-scripts/backup.sh
+BACKUP_DIR=/srv/sherm-backups
+NOTIFY_WEBHOOK_URL=https://n8n.example.org/webhook/sherm-map
+NOTIFY_WEBHOOK_TOKEN=some-long-random-string
+BACKUP_NOTIFY_SUCCESS=true
 ```
 
-This writes `backups/sherm-backup-<UTC time>.tar.gz` plus a `.sha256` file next to it. The archive contains:
-- `db.dump` (`pg_dump -Fc`)
-- `uploads/` (every file in the upload folder)
-- `uploads.sha256`, the checksum of every upload
-- `tables.json`, the row count of every table
-- `manifest.json` (schema version, dump checksum, number of files)
-
-It works with both the old (v1) and the new schema.
-
-Settings, all via environment variables:
-
-| Var | Default | Meaning |
-|---|---|---|
-| `BACKUP_DIR` | `<repo>/backups` | Where backups go |
-| `UPLOADS_DIR` | `/opt/nfs/sherm-map/uploads` | Upload folder on the host |
-| `DB_CONTAINER` | (empty) | Use this container instead of `docker compose exec db` |
-| `KEEP_DAILY` / `KEEP_WEEKLY` / `KEEP_MONTHLY` | 7 / 4 / 6 | Retention. The newest backup per day, week and month is kept; everything else is deleted. |
-| `BACKUP_POST_HOOK` | (empty) | Command run with the backup file path as its argument, e.g. a copy to another machine |
+> **Where the backups live:** the database stays on NFS (decision 2026-10-07), and there's no second machine for off-site copies. So `BACKUP_DIR` should at least be on **different storage than `/opt/nfs/sherm-map/pgdata`**, e.g. the server's local disk. Then one broken storage device doesn't take the data *and* the backups with it. Ideally also copy the newest backup to a laptop or USB disk now and then.
 
 ### Scheduled backups (cron)
 
 ```cron
-# Nightly backup at 03:15, copy off the server via the hook
-15 3 * * *  cd /path/to/sherm-map && BACKUP_POST_HOOK='rclone copy "$1" offsite:sherm-backups' scripts/backup.sh >> /var/log/sherm-backup.log 2>&1
-# Monthly restore test on the 1st at 05:00
+# Nightly backup at 03:15, monthly restore test on the 1st at 05:00 (settings come from .env)
+15 3 * * *  cd /path/to/sherm-map && scripts/backup.sh >> /var/log/sherm-backup.log 2>&1
 0 5 1 * *   cd /path/to/sherm-map && scripts/restore-test.sh >> /var/log/sherm-backup.log 2>&1
 ```
 
-Both scripts exit with a non-zero code on any problem. Cron sends their output by mail if `MAILTO` is set. Proper alerting comes in rebuild Phase 7.
+### Notifications (n8n)
 
-> **Off-site copy:** a backup on the same server (or the same NFS) doesn't help if that machine dies. The target is still an open question in rebuild.md: a second machine, a storage box or S3.
+The backup scripts and the backend send the same JSON shape to `NOTIFY_WEBHOOK_URL`:
+
+```json
+{ "source": "sherm-map", "event": "backup.failed", "host": "server1",
+  "message": "Fehler bei „DB-Dump“: docker exec …", "at": "2026-10-07T03:15:02Z", ... }
+```
+
+| Event | Sent by | When |
+|---|---|---|
+| `backup.failed` / `restore_test.failed` | scripts | any error, including unexpected ones (the failing step is named) |
+| `backup.succeeded` / `restore_test.succeeded` | scripts | only with `BACKUP_NOTIFY_SUCCESS=true` |
+| `sherm.submitted` | backend | new sherm waiting for review. Includes `url` (review queue), `sherm.admin_url` and `pending_count` |
+| `report.created` | backend | a visitor reported a sherm. Includes `url`, `sherm`, `report.reason`/`comment` |
+
+`message` is always a ready-to-send German sentence, so the simplest n8n workflow is:
+
+1. **Webhook** node (POST, path e.g. `sherm-map`, *Header Auth* with `Authorization: Bearer <token>`).
+2. **Telegram** (or E-mail, Signal, Discord, …) node with text `{{ $json.body.message }}` plus `{{ $json.body.url }}` when present.
+3. Optionally put an **IF/Switch** on `{{ $json.body.event }}` in between, e.g. backup errors to you, new sherms to the moderator group.
+
+**"The backup didn't run at all"** (server down, cron broken) can't be reported by the script itself. For that:
+- set `BACKUP_NOTIFY_SUCCESS=true`;
+- in n8n, store the time of the last `backup.succeeded` (e.g. in a *Data Table* or static data);
+- a second workflow with a **Schedule** trigger (daily at 09:00) alerts if that was more than 26 hours ago.
+
+Independently of n8n, the admin panel (System page) warns when the newest backup is older than 36 hours.
 
 ### Testing a backup
 
