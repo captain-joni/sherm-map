@@ -4,7 +4,14 @@ Status:
 - **Phase 0:** done. Production runs the cleaned-up v1 app.
 - **Phase 1:** code done on branch `rebuild` and tested against a fake legacy DB. Still to do: the dress rehearsal with real prod data (1.5), and answers to open questions 1 and 2.
 - **Phase 2:** API done and tested on branch `rebuild` (`docs/api.md`, 32 API tests). Nothing is deployed yet; it ships together with the new frontend.
-- **Phases 3–7:** not started.
+- **Phases 3–5 (public app):** built on branch `rebuild` (`web/`) and checked in Chromium on phone and desktop sizes:
+  - map, clustering, bottom sheet, search, near me
+  - add flow with GPS/camera/offline queue
+  - share link previews
+  - likes, "still there?", report
+
+  Not yet tested on real iOS/Android devices.
+- **Phases 6–7:** not started.
 
 Rebuild work happens on the **`rebuild` branch**. `main` stays deployable for hotfixes to the running v1 app.
 
