@@ -76,6 +76,7 @@ npm run check      # syntax check (there are no tests yet)
 - Postgres rejects `\u0000` in text. `cleanText()` in server.js strips control characters for that reason.
 - Don't use `innerHTML` with data from the API. Build DOM nodes and set `textContent` (see `buildPopup` in `frontend/main.js` and `el()` in `frontend/admin/main.js`).
 - The CSP blocks inline scripts and any script or image host not in the helmet config in server.js. Add a new CDN or tile server there first.
+- The OSM tile server returns **403 without a `Referer` header** (Tile Usage Policy). Keep helmet's `referrerPolicy` at `strict-origin-when-cross-origin`. helmet's default `no-referrer` blanks the map.
 - When testing with curl, use `--form-string` for values starting with `<` or `@`; with `-F`, curl reads them as files.
 - `pkill -f 'node server.js'` also kills the shell running it. Use `pgrep` or kill by PID.
 

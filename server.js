@@ -43,7 +43,9 @@ app.use(helmet({
         'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org'],
       'upgrade-insecure-requests': null // HTTPS macht Traefik, lokal läuft alles über http
     }
-  }
+  },
+  // OSM-Tileserver verlangt einen Referer (Tile Usage Policy), helmets Default "no-referrer" führt zu 403
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 app.use(express.json({ limit: '10kb' }));
 
