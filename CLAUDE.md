@@ -71,6 +71,13 @@ npm run check      # syntax check (there are no tests yet)
 - On the existing prod DB, `POSTGRES_PASSWORD` must stay the password the DB was created with.
 - See rebuild.md Phase 0 for the first deploy of this version.
 
+## Backups
+
+`scripts/backup.sh` (nightly via cron), `scripts/restore-test.sh` (monthly) and `scripts/restore.sh` run on the server in the repo directory.
+- `backup.sh` writes one `backups/sherm-backup-<time>.tar.gz` file with the DB dump, all uploads, checksums and table counts.
+- Env: `UPLOADS_DIR` (default `/opt/nfs/sherm-map/uploads`), `BACKUP_DIR`, `KEEP_DAILY`/`KEEP_WEEKLY`/`KEEP_MONTHLY`, and `BACKUP_POST_HOOK` for the off-site copy.
+- The full runbook is `docs/operations.md` on the `rebuild` branch.
+
 ## Gotchas
 
 - Postgres rejects `\u0000` in text. `cleanText()` in server.js strips control characters for that reason.
