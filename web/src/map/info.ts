@@ -1,23 +1,30 @@
-// "Über"-Dialog mit Links und Datenschutzhinweisen
+// "Über"-Dialog: Links, Sprache, Datenschutzhinweise
 import { X } from 'lucide';
 import { h, icon } from '../lib/dom.ts';
+import { lang, setLang, t, type Lang } from '../lib/i18n.ts';
 
 export function openInfo(onClose: () => void): void {
+  const langButton = (value: Lang, label: string) =>
+    h('button', { type: 'button', 'aria-pressed': String(lang === value), onclick: () => { if (lang !== value) setLang(value); } }, label);
+
   const dialog = h('dialog', { class: 'dialog info' },
-    h('button', { class: 'icon-button dialog-close', type: 'button', 'aria-label': 'Schließen', onclick: () => dialog.close() }, icon(X)),
-    h('h2', {}, 'Sherm Map'),
-    h('p', {}, 'Alle Sherms auf einer Karte. Jede*r kann Sherms eintragen; sie erscheinen, sobald wir sie geprüft haben.'),
+    h('button', { class: 'icon-button dialog-close', type: 'button', 'aria-label': t('common.close'), onclick: () => dialog.close() }, icon(X)),
+    h('h2', {}, t('app.title')),
+    h('p', {}, t('info.text')),
     h('nav', { class: 'info-links' },
-      h('a', { href: 'https://www.sherm.fun', target: '_blank', rel: 'noopener' }, 'Über Sherm'),
-      h('a', { href: 'https://www.sherm.fun/impressum', target: '_blank', rel: 'noopener' }, 'Impressum')),
-    h('h3', {}, 'Datenschutz'),
+      h('a', { href: 'https://www.sherm.fun', target: '_blank', rel: 'noopener' }, t('info.about')),
+      h('a', { href: 'https://www.sherm.fun/impressum', target: '_blank', rel: 'noopener' }, t('info.imprint'))),
+    h('div', { class: 'info-lang' },
+      h('span', {}, t('info.language')),
+      h('div', { class: 'segmented', role: 'group', 'aria-label': t('info.language') }, langButton('de', 'Deutsch'), langButton('en', 'English'))),
+    h('h3', {}, t('info.privacy')),
     // ENTWURF: technische Beschreibung, muss vor dem Livegang rechtlich geprüft und ergänzt werden
     h('ul', { class: 'info-privacy' },
-      h('li', {}, 'Beim Eintragen speichern wir Titel, Beschreibung, Ort und Foto. Aus dem Foto entfernen wir alle Metadaten (z.B. GPS-Position und Kamera) – schon auf deinem Gerät und noch einmal auf dem Server.'),
-      h('li', {}, 'Deine IP-Adresse speichern wir nicht. Gegen Spam speichern wir nur einen verschlüsselten, nicht umkehrbaren Wert davon.'),
-      h('li', {}, 'Für „Gefällt mir“ und „Noch da?“ erzeugt dein Browser eine zufällige Kennung, die nur in deinem Browser liegt. Ein Konto gibt es nicht.'),
-      h('li', {}, 'Dein Standort wird nur verwendet, wenn du es antippst, und nur auf deinem Gerät – außer du trägst damit einen Sherm ein.'),
-      h('li', {}, 'Die Karte kommt von OpenStreetMap; dabei sieht der Kartenserver deine IP-Adresse. Die Ortssuche läuft über unseren Server zu Photon (komoot), ohne deine IP weiterzugeben.')));
+      h('li', {}, t('privacy.1')),
+      h('li', {}, t('privacy.2')),
+      h('li', {}, t('privacy.3')),
+      h('li', {}, t('privacy.4')),
+      h('li', {}, t('privacy.5'))));
   dialog.addEventListener('close', () => {
     dialog.remove();
     onClose();

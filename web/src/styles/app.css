@@ -363,6 +363,10 @@ dialog::backdrop { background: rgb(0 0 0 / 0.45); }
 .dialog-close { float: right; margin: -8px -8px 0 0; }
 .info-links { display: flex; gap: 16px; margin: 12px 0; }
 .info-links a { color: var(--blue); font-weight: 600; }
+.info-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.segmented { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--line); }
+.segmented button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: none; font-weight: 600; color: var(--muted); }
+.segmented button[aria-pressed='true'] { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.1); }
 .info-privacy { padding-left: 18px; line-height: 1.5; color: #374151; }
 .info-privacy li { margin-bottom: 8px; }
 

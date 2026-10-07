@@ -4,14 +4,15 @@ import { LocateFixed } from 'lucide';
 import type { MapSherm } from '@sherm/shared';
 import { h, icon, toast } from '../lib/dom.ts';
 import { distance, formatDistance } from '../lib/format.ts';
+import { t } from '../lib/i18n.ts';
 
 export function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error('Dein Browser kann keinen Standort bestimmen'));
+    if (!navigator.geolocation) return reject(new Error(t('locate.unsupported')));
     navigator.geolocation.getCurrentPosition(resolve, err => {
       reject(new Error(err.code === err.PERMISSION_DENIED
-        ? 'Standort-Zugriff ist blockiert. Du kannst ihn in den Browser-Einstellungen erlauben.'
-        : 'Standort konnte nicht bestimmt werden'));
+        ? t('locate.denied')
+        : t('locate.failed')));
     }, { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 });
   });
 }
@@ -28,7 +29,7 @@ export function userMarker(): L.Marker {
 export function createLocateButton(map: L.Map, sherms: () => MapSherm[]): HTMLElement {
   const dot = userMarker();
   const accuracy = L.circle([0, 0], { radius: 0, className: 'user-accuracy', interactive: false });
-  const button = h('button', { class: 'fab fab-small', type: 'button', 'aria-label': 'Sherms in meiner Nähe' }, icon(LocateFixed));
+  const button = h('button', { class: 'fab fab-small', type: 'button', 'aria-label': t('locate.button') }, icon(LocateFixed));
 
   button.addEventListener('click', async () => {
     button.classList.add('busy');
@@ -48,7 +49,7 @@ export function createLocateButton(map: L.Map, sherms: () => MapSherm[]): HTMLEl
       }
       const bounds = L.latLngBounds([me, ...nearest.map(n => n.s)]);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
-      toast(`Nächster Sherm: ${formatDistance(nearest[0]!.d)} entfernt`);
+      toast(t('locate.nearest', { distance: formatDistance(nearest[0]!.d) }));
     } catch (err) {
       toast((err as Error).message);
     } finally {

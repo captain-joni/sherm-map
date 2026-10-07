@@ -109,7 +109,7 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       expect((await submit({ uuid: 'nicht-uuid' })).status).toBe(400);
       const fake = await submit({}, Buffer.from('<script>alert(1)</script>'));
       expect(fake.status).toBe(400);
-      expect(fake.body.error).toBe('Datei ist kein gültiges Bild');
+      expect(fake.body).toEqual({ error: 'Datei ist kein gültiges Bild', code: 'invalid_image' });
       const gif = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000' } }).gif().toBuffer();
       expect((await submit({}, gif)).status).toBe(400);
     });
@@ -424,8 +424,8 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
     it('einheitliches Fehlerformat', async () => {
       const bad = await request(env.app).post('/api/auth/login').set('Content-Type', 'application/json').send('{kaputt');
       expect(bad.status).toBe(400);
-      expect(bad.body).toEqual({ error: 'Ungültige Anfrage' });
-      expect((await request(env.app).get('/api/gibtsnicht')).body).toEqual({ error: 'Nicht gefunden' });
+      expect(bad.body).toEqual({ error: 'Ungültige Anfrage', code: 'bad_request' });
+      expect((await request(env.app).get('/api/gibtsnicht')).body).toEqual({ error: 'Nicht gefunden', code: 'not_found' });
       expect((await request(env.app).get('/api/sherms/abc')).status).toBe(400);
     });
 
@@ -436,7 +436,7 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
         for (let i = 0; i < 20; i++) expect((await post()).status).toBe(400); // zählt auch ungültige
         const limited = await post();
         expect(limited.status).toBe(429);
-        expect(limited.body.error).toMatch(/Zu viele Sherms/);
+        expect(limited.body).toMatchObject({ code: 'rate_limited', error: expect.stringMatching(/Zu viele Sherms/) });
       } finally {
         await strict.cleanup();
       }

@@ -92,3 +92,25 @@ test('Liken und melden, Meldung landet im Admin', async ({ page }) => {
   await page.goto('/admin/meldungen');
   await expect(page.locator('.report h2')).toContainText('E2E Sherm Online');
 });
+
+test.describe('auf Englisch', () => {
+  test.use({ locale: 'en-US' });
+
+  test('Englischer Browser bekommt die englische App, Umschalten auf Deutsch bleibt gespeichert', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: 'Add a Sherm' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    const list = await (await page.request.get('/api/sherms')).json();
+    await page.goto(`/s/${list[0].id}`);
+    await expect(page.getByRole('button', { name: /Like · \d/ })).toBeVisible();
+    await expect(page.getByText('Is the Sherm still there?')).toBeVisible();
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Info' }).click();
+    await page.getByRole('button', { name: 'Deutsch' }).click();
+    await expect(page.getByRole('button', { name: 'Sherm eintragen' })).toBeVisible();
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  });
+});

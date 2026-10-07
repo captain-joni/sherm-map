@@ -7,7 +7,7 @@ function limiter(windowMinutes: number, limit: number, message: string): Request
     limit,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    message: { error: message },
+    message: { error: message, code: 'rate_limited' },
   });
 }
 

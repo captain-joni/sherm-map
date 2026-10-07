@@ -7,6 +7,7 @@ import { h, icon, toast } from '../lib/dom.ts';
 import { compressImage } from '../lib/image.ts';
 import { enqueue, processQueue, SYNC_TAG } from '../lib/queue.ts';
 import { getPosition, userMarker } from './locate.ts';
+import { t } from '../lib/i18n.ts';
 
 interface Options {
   center: L.LatLng;
@@ -30,15 +31,15 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
 
   const title = h('h2', {});
   const progress = h('span', { class: 'add-progress' });
-  const backButton = h('button', { class: 'icon-button', type: 'button', 'aria-label': 'Zurück', onclick: () => back() }, icon(ChevronLeft));
+  const backButton = h('button', { class: 'icon-button', type: 'button', 'aria-label': t('common.back'), onclick: () => back() }, icon(ChevronLeft));
   const content = h('div', { class: 'add-content' });
   const primary = h('button', { class: 'button primary wide', type: 'button' });
   const footer = h('footer', { class: 'add-footer' }, primary);
-  const overlay = h('div', { class: 'add', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Sherm eintragen' },
+  const overlay = h('div', { class: 'add', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('add.dialog') },
     h('header', { class: 'add-header' },
       backButton,
       h('div', { class: 'add-title' }, title, progress),
-      h('button', { class: 'icon-button', type: 'button', 'aria-label': 'Schließen', onclick: () => tryClose() }, icon(X))),
+      h('button', { class: 'icon-button', type: 'button', 'aria-label': t('common.close'), onclick: () => tryClose() }, icon(X))),
     content, footer);
   document.body.append(overlay);
   document.body.classList.add('no-scroll');
@@ -46,16 +47,16 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
   // Schritt 1: Karte mit festem Fadenkreuz in der Mitte, der Nutzer schiebt die Karte darunter
   const mapEl = h('div', { class: 'add-map' });
   const coordsText = h('p', { class: 'add-coords' });
-  const gpsButton = h('button', { class: 'button primary wide', type: 'button' }, icon(LocateFixed, 20), 'Meinen Standort verwenden');
-  const manualInput = h('input', { type: 'text', inputmode: 'decimal', placeholder: 'z.B. 49.41330, 8.68651', 'aria-label': 'Koordinaten' });
+  const gpsButton = h('button', { class: 'button primary wide', type: 'button' }, icon(LocateFixed, 20), t('add.useLocation'));
+  const manualInput = h('input', { type: 'text', inputmode: 'decimal', placeholder: t('add.coordinatesPlaceholder'), 'aria-label': t('add.coordinatesLabel') });
   const manual = h('details', { class: 'add-manual' },
-    h('summary', {}, 'Koordinaten eingeben'),
+    h('summary', {}, t('add.coordinates')),
     h('form', { class: 'inline-form', onsubmit: (e: Event) => { e.preventDefault(); applyManual(); } },
-      manualInput, h('button', { class: 'button', type: 'submit' }, 'Übernehmen')));
+      manualInput, h('button', { class: 'button', type: 'submit' }, t('add.coordinatesApply'))));
   const step1 = h('div', { class: 'add-step add-step-location' },
     h('div', { class: 'add-map-wrap' }, mapEl, h('div', { class: 'add-crosshair', 'aria-hidden': 'true' })),
     h('div', { class: 'add-panel' },
-      h('p', { class: 'muted' }, 'Schieb die Karte, bis der Pin genau auf dem Sherm sitzt.'),
+      h('p', { class: 'muted' }, t('add.dragHint')),
       gpsButton, coordsText, manual));
 
   // Erst einhängen, dann die Karte erzeugen: an einem losen Element setzt Leaflet position: relative
@@ -78,7 +79,7 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
 
   async function useGps() {
     gpsButton.disabled = true;
-    gpsButton.lastChild!.textContent = 'Standort wird bestimmt …';
+    gpsButton.lastChild!.textContent = t('add.locating');
     try {
       const { coords } = await getPosition();
       const pos = L.latLng(coords.latitude, coords.longitude);
@@ -92,7 +93,7 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
       toast((err as Error).message);
     } finally {
       gpsButton.disabled = false;
-      gpsButton.lastChild!.textContent = 'Meinen Standort verwenden';
+      gpsButton.lastChild!.textContent = t('add.useLocation');
     }
   }
   gpsButton.addEventListener('click', useGps);
@@ -102,7 +103,7 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
     const lat = match ? Number(match[1]) : NaN;
     const lng = match ? Number(match[2]) : NaN;
     if (!(Math.abs(lat) <= 90 && Math.abs(lng) <= 180)) {
-      toast('Format: Breite, Länge, z.B. 49.41330, 8.68651');
+      toast(t('add.coordinatesFormat'));
       return;
     }
     state.accuracy = null;
@@ -121,23 +122,23 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
   const step2 = h('div', { class: 'add-step add-step-photo' },
     preview,
     h('div', { class: 'add-photo-buttons' },
-      h('button', { class: 'button primary', type: 'button', onclick: () => cameraInput.click() }, icon(Camera, 20), 'Foto aufnehmen'),
-      h('button', { class: 'button', type: 'button', onclick: () => galleryInput.click() }, icon(Images, 20), 'Aus Galerie')),
-    h('p', { class: 'muted small' }, 'Standort- und Kameradaten werden aus dem Foto entfernt.'),
+      h('button', { class: 'button primary', type: 'button', onclick: () => cameraInput.click() }, icon(Camera, 20), t('add.takePhoto')),
+      h('button', { class: 'button', type: 'button', onclick: () => galleryInput.click() }, icon(Images, 20), t('add.gallery'))),
+    h('p', { class: 'muted small' }, t('add.metadataNote')),
     cameraInput, galleryInput);
 
   async function takeImage(input: HTMLInputElement) {
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
-    preview.replaceChildren(h('p', { class: 'muted' }, 'Foto wird vorbereitet …'));
+    preview.replaceChildren(h('p', { class: 'muted' }, t('add.preparing')));
     try {
       state.image = await compressImage(file);
       state.dirty = true;
       if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
       state.previewUrl = URL.createObjectURL(state.image);
     } catch {
-      toast('Dieses Foto kann der Browser nicht öffnen. Versuch ein anderes.');
+      toast(t('add.photoUnreadable'));
     }
     renderPreview();
     renderFooter();
@@ -147,18 +148,18 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
 
   function renderPreview() {
     preview.replaceChildren(state.previewUrl
-      ? h('img', { src: state.previewUrl, alt: 'Dein Foto' })
-      : h('div', { class: 'add-preview-empty' }, icon(Camera, 48), h('p', {}, 'Ein Foto hilft uns beim Prüfen und allen beim Finden.')));
+      ? h('img', { src: state.previewUrl, alt: t('add.yourPhoto') })
+      : h('div', { class: 'add-preview-empty' }, icon(Camera, 48), h('p', {}, t('add.photoHint'))));
   }
 
   // Schritt 3: Text
-  const titleInput = h('input', { type: 'text', name: 'title', required: true, maxlength: LIMITS.titleMax, autocomplete: 'off', placeholder: 'z.B. Sherm an der Alten Brücke' });
-  const descInput = h('textarea', { name: 'description', rows: 4, maxlength: LIMITS.descriptionMax, placeholder: 'Wo genau? Was ist besonders?' });
+  const titleInput = h('input', { type: 'text', name: 'title', required: true, maxlength: LIMITS.titleMax, autocomplete: 'off', placeholder: t('add.titlePlaceholder') });
+  const descInput = h('textarea', { name: 'description', rows: 4, maxlength: LIMITS.descriptionMax, placeholder: t('add.descriptionPlaceholder') });
   // Honeypot: für Menschen unsichtbar, Bots füllen es aus
   const honeypot = h('input', { type: 'text', name: 'website', tabindex: -1, autocomplete: 'off' });
   const form = h('form', { class: 'add-step add-step-text', novalidate: true, onsubmit: (e: Event) => { e.preventDefault(); next(); } },
-    h('label', { class: 'field' }, h('span', {}, 'Titel'), titleInput),
-    h('label', { class: 'field' }, h('span', {}, 'Beschreibung (optional)'), descInput),
+    h('label', { class: 'field' }, h('span', {}, t('add.titleLabel')), titleInput),
+    h('label', { class: 'field' }, h('span', {}, t('add.descriptionLabel')), descInput),
     h('div', { class: 'hp', 'aria-hidden': 'true' }, h('label', {}, 'Website', honeypot)));
   titleInput.addEventListener('input', () => { state.dirty = true; renderFooter(); });
 
@@ -166,30 +167,30 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
     content.replaceChildren();
     backButton.style.visibility = state.step === 1 || state.step === 'done' ? 'hidden' : 'visible';
     if (state.step === 1) {
-      title.textContent = 'Wo ist der Sherm?';
+      title.textContent = t('add.where');
       content.append(step1);
       setTimeout(() => miniMap.invalidateSize(), 0);
       updateCoords();
     } else if (state.step === 2) {
-      title.textContent = 'Foto';
+      title.textContent = t('add.photo');
       content.append(step2);
       renderPreview();
     } else if (state.step === 3) {
-      title.textContent = 'Beschreibung';
+      title.textContent = t('add.details');
       content.append(form);
       setTimeout(() => titleInput.focus(), 50);
     }
-    progress.textContent = state.step === 'done' ? '' : `Schritt ${state.step} von 3`;
+    progress.textContent = state.step === 'done' ? '' : t('add.step', { n: state.step });
     renderFooter();
   }
 
   function renderFooter() {
     footer.hidden = state.step === 'done';
     primary.disabled = false;
-    if (state.step === 1) primary.textContent = 'Hier ist der Sherm';
-    if (state.step === 2) primary.textContent = state.image ? 'Weiter' : 'Ohne Foto weiter';
+    if (state.step === 1) primary.textContent = t('add.here');
+    if (state.step === 2) primary.textContent = state.image ? t('add.next') : t('add.withoutPhoto');
     if (state.step === 3) {
-      primary.textContent = 'Sherm eintragen';
+      primary.textContent = t('add.submit');
       primary.disabled = !titleInput.value.trim();
     }
   }
@@ -212,7 +213,7 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
   async function submit() {
     if (!titleInput.value.trim()) return;
     primary.disabled = true;
-    primary.textContent = 'Wird gespeichert …';
+    primary.textContent = t('add.saving');
     const c = miniMap.getCenter().wrap();
     await enqueue({
       uuid: crypto.randomUUID(),
@@ -241,19 +242,17 @@ export function openAddFlow({ center, zoom, onClose, onQueueChanged }: Options):
   function showDone(sent: boolean) {
     state.step = 'done';
     state.dirty = false;
-    title.textContent = sent ? 'Danke!' : 'Gespeichert';
+    title.textContent = sent ? t('add.thanks') : t('add.saved');
     render();
     content.append(h('div', { class: 'add-done' },
       icon(sent ? CircleCheck : CloudUpload, 64),
-      h('h3', {}, sent ? 'Dein Sherm ist eingetragen' : 'Wird hochgeladen, sobald du Netz hast'),
-      h('p', { class: 'muted' }, sent
-        ? 'Wir prüfen ihn kurz, dann erscheint er auf der Karte.'
-        : 'Er wird automatisch gesendet, sobald du wieder Netz hast – spätestens beim nächsten Öffnen der Sherm Map.'),
-      h('button', { class: 'button primary', type: 'button', onclick: () => close() }, 'Zur Karte')));
+      h('h3', {}, sent ? t('add.doneTitle') : t('add.queuedTitle')),
+      h('p', { class: 'muted' }, sent ? t('add.doneText') : t('add.queuedText')),
+      h('button', { class: 'button primary', type: 'button', onclick: () => close() }, t('add.toMap'))));
   }
 
   function tryClose() {
-    if (state.dirty && state.step !== 'done' && !confirm('Eintrag verwerfen?')) return;
+    if (state.dirty && state.step !== 'done' && !confirm(t('add.discard'))) return;
     close();
   }
 

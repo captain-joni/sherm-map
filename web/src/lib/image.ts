@@ -1,3 +1,5 @@
+import { t } from './i18n.ts';
+
 // Foto vor dem Upload verkleinern und als JPEG neu kodieren: spart mobile Daten, macht HEIC
 // (iPhone) zu JPEG und entfernt dabei schon auf dem Gerät die EXIF-Daten (GPS!).
 const MAX_SIZE = 2048;
@@ -19,5 +21,5 @@ export async function compressImage(file: Blob): Promise<Blob> {
   bitmap.close();
 
   return new Promise((resolve, reject) =>
-    canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Bild konnte nicht verarbeitet werden'))), 'image/jpeg', QUALITY));
+    canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error(t('image.failed')))), 'image/jpeg', QUALITY));
 }

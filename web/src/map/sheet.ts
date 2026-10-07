@@ -1,6 +1,7 @@
 // Bottom Sheet wie in Karten-Apps: halb offen zeigt das Wichtigste, nach oben ziehen für alles,
 // nach unten ziehen schließt. Auf breiten Bildschirmen ist es ein Seitenpanel ohne Ziehen.
 import { h } from '../lib/dom.ts';
+import { t } from '../lib/i18n.ts';
 
 export type SheetState = 'closed' | 'half' | 'full';
 
@@ -16,7 +17,7 @@ export interface Sheet {
 
 export function createSheet(onClose: () => void): Sheet {
   const body = h('div', { class: 'sheet-body' });
-  const handle = h('button', { class: 'sheet-handle', type: 'button', 'aria-label': 'Größer oder kleiner' }, h('span'));
+  const handle = h('button', { class: 'sheet-handle', type: 'button', 'aria-label': t('sheet.handle') }, h('span'));
   const element = h('section', { class: 'sheet', 'aria-hidden': 'true', 'data-state': 'closed' }, handle, body);
   let current: SheetState = 'closed';
 

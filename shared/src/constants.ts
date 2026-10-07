@@ -32,3 +32,12 @@ export const PROBABLY_GONE = { minGone: 3, ratio: 2 } as const;
 export function isProbablyGone(s: { gone_count: number; still_there_count: number }): boolean {
   return s.gone_count >= PROBABLY_GONE.minGone && s.gone_count > PROBABLY_GONE.ratio * s.still_there_count;
 }
+
+// Fehlercodes der API ({ error, code }): das Frontend übersetzt anhand des Codes, "error" ist der deutsche Text
+export const ERROR_CODES = [
+  'invalid_input', 'bad_request', 'not_found', 'unauthorized', 'forbidden', 'conflict',
+  'invalid_image', 'unsupported_image', 'image_failed', 'image_too_large', 'invalid_upload',
+  'rate_limited', 'geocoder_unavailable', 'server_error',
+] as const;
+export type ErrorCode = (typeof ERROR_CODES)[number];
+

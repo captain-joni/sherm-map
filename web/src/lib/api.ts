@@ -2,9 +2,11 @@ import type { GeocodeResult, MapSherm, PublicSherm, ReactionKind, ReportReason }
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code: string | undefined;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -13,10 +15,10 @@ export async function request<T>(url: string, init: RequestInit = {}): Promise<T
   try {
     res = await fetch(url, { credentials: 'same-origin', ...init });
   } catch {
-    throw new ApiError(0, 'Keine Verbindung');
+    throw new ApiError(0, 'Keine Verbindung', 'no_connection');
   }
   const data = res.headers.get('content-type')?.includes('application/json') ? await res.json() : null;
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? `Fehler ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? `Fehler ${res.status}`, data?.code);
   return data as T;
 }
 

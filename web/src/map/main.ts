@@ -15,11 +15,13 @@ import { openInfo } from './info.ts';
 import { createLocateButton } from './locate.ts';
 import { createSearch } from './search.ts';
 import { createSheet } from './sheet.ts';
+import { errorMessage, t, tn } from '../lib/i18n.ts';
 
 const DEFAULT_VIEW = { lat: 49.41, lng: 8.69, zoom: 6 };
 const saved = storage.get('view', DEFAULT_VIEW);
 
 // Karte
+document.getElementById('map')!.setAttribute('aria-label', t('map.label'));
 const map = L.map('map', { zoomControl: false, worldCopyJump: true, minZoom: 2 })
   .setView([saved.lat, saved.lng], saved.zoom);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -59,7 +61,7 @@ async function loadSherms() {
   try {
     sherms = await api.sherms();
   } catch (err) {
-    toast(err instanceof ApiError && err.status === 0 ? 'Offline – Sherms konnten nicht geladen werden' : 'Sherms konnten nicht geladen werden');
+    toast(err instanceof ApiError && err.status === 0 ? t('map.loadFailedOffline') : t('map.loadFailed'));
     return;
   }
   clusters.clearLayers();
@@ -79,7 +81,7 @@ const sheet = createSheet(() => {
 });
 
 async function showSherm(id: number) {
-  sheet.open(h('div', { class: 'detail-loading' }, 'Lädt …'));
+  sheet.open(h('div', { class: 'detail-loading' }, t('common.loading')));
   try {
     const sherm = await api.sherm(id);
     sheet.open(renderDetail(sherm), sheet.state() === 'full' ? 'full' : 'half');
@@ -93,7 +95,7 @@ async function showSherm(id: number) {
     if (marker) clusters.zoomToShowLayer(marker, () => {});
   } catch (err) {
     sheet.close();
-    toast(err instanceof ApiError && err.status === 404 ? 'Diesen Sherm gibt es nicht (mehr)' : 'Sherm konnte nicht geladen werden');
+    toast(err instanceof ApiError && err.status === 404 ? t('sherm.notFound') : t('sherm.loadFailed'));
   }
 }
 
@@ -142,11 +144,11 @@ queueChip.addEventListener('click', async () => {
   const items = await queued();
   const failed = items.filter(i => i.status === 'failed');
   if (failed.length) {
-    toast(`Nicht angenommen: ${failed[0]!.error ?? 'unbekannter Fehler'}`);
+    toast(t('queue.rejected', { error: errorMessage(failed[0]!.error_code ?? undefined, failed[0]!.error ?? '?') }));
     return;
   }
   const { sent } = await processQueue().catch(() => ({ sent: 0 }));
-  toast(sent ? 'Hochgeladen, danke!' : 'Noch kein Netz – wir versuchen es weiter');
+  toast(sent ? t('queue.uploaded') : t('queue.stillOffline'));
   void updateQueueChip();
 });
 
@@ -155,9 +157,7 @@ async function updateQueueChip() {
   queueChip.hidden = items.length === 0;
   const failed = items.filter(i => i.status === 'failed').length;
   queueChip.classList.toggle('failed', failed > 0);
-  queueChip.lastElementChild!.textContent = failed
-    ? `${failed} Sherm${failed > 1 ? 's' : ''} nicht angenommen`
-    : `${items.length} Sherm${items.length > 1 ? 's' : ''} wartet auf Upload`;
+  queueChip.lastElementChild!.textContent = failed ? tn('queue.failed', failed) : tn('queue.waiting', items.length);
 }
 
 const ui = document.getElementById('app')!;
@@ -172,8 +172,8 @@ ui.append(
   queueChip,
   h('div', { class: 'fabs' },
     createLocateButton(map, () => sherms),
-    h('button', { class: 'fab fab-primary', type: 'button', onclick: () => navigate('/neu') }, icon(Plus, 26), h('span', {}, 'Sherm eintragen'))),
-  h('button', { class: 'info-button', type: 'button', 'aria-label': 'Infos', onclick: () => navigate('/info') }, icon(Info, 18)),
+    h('button', { class: 'fab fab-primary', type: 'button', onclick: () => navigate('/neu') }, icon(Plus, 26), h('span', {}, t('map.add')))),
+  h('button', { class: 'info-button', type: 'button', 'aria-label': t('map.info'), onclick: () => navigate('/info') }, icon(Info, 18)),
   sheet.element,
 );
 map.on('click', () => {
@@ -189,7 +189,7 @@ navigator.serviceWorker?.addEventListener('message', e => {
 // Neue App-Version: nachfragen statt mitten im Eintragen neu zu laden
 const updateSW = registerSW({
   onNeedRefresh() {
-    toast('Neue Version verfügbar', { label: 'Neu laden', onClick: () => void updateSW(true) });
+    toast(t('map.update'), { label: t('map.reload'), onClick: () => void updateSW(true) });
   },
 });
 

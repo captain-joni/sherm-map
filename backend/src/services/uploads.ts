@@ -17,9 +17,9 @@ export async function assertImage(buffer: Buffer): Promise<void> {
   try {
     format = (await sharp(buffer).metadata()).format;
   } catch {
-    throw badRequest('Datei ist kein gültiges Bild');
+    throw badRequest('Datei ist kein gültiges Bild', undefined, 'invalid_image');
   }
   if (!format || !ALLOWED_FORMATS.has(format)) {
-    throw badRequest('Bildformat nicht unterstützt (JPEG, PNG oder WebP)');
+    throw badRequest('Bildformat nicht unterstützt (JPEG, PNG oder WebP)', undefined, 'unsupported_image');
   }
 }

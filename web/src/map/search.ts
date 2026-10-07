@@ -5,6 +5,7 @@ import type { GeocodeResult, MapSherm } from '@sherm/shared';
 import { api } from '../lib/api.ts';
 import { h, icon } from '../lib/dom.ts';
 import { normalize } from '../lib/format.ts';
+import { t } from '../lib/i18n.ts';
 
 interface Options {
   sherms: () => MapSherm[];
@@ -14,16 +15,16 @@ interface Options {
 
 export function createSearch({ sherms, onSherm, onPlace }: Options): HTMLElement {
   const input = h('input', {
-    type: 'search', class: 'search-input', placeholder: 'Sherms oder Orte suchen',
-    'aria-label': 'Suche', autocomplete: 'off', enterkeyhint: 'search',
+    type: 'search', class: 'search-input', placeholder: t('search.placeholder'),
+    'aria-label': t('search.label'), autocomplete: 'off', enterkeyhint: 'search',
   });
   const results = h('div', { class: 'search-results', role: 'listbox' });
   const panel = h('div', { class: 'search-panel', hidden: true },
     h('div', { class: 'search-bar' },
       icon(Search, 20), input,
-      h('button', { class: 'icon-button', type: 'button', 'aria-label': 'Suche schließen', onclick: () => close() }, icon(X))),
+      h('button', { class: 'icon-button', type: 'button', 'aria-label': t('search.close'), onclick: () => close() }, icon(X))),
     results);
-  const toggle = h('button', { class: 'fab fab-small search-toggle', type: 'button', 'aria-label': 'Suchen', onclick: () => open() }, icon(Search));
+  const toggle = h('button', { class: 'fab fab-small search-toggle', type: 'button', 'aria-label': t('search.open'), onclick: () => open() }, icon(Search));
 
   let timer: number | undefined;
   let controller: AbortController | null = null;
@@ -49,7 +50,7 @@ export function createSearch({ sherms, onSherm, onPlace }: Options): HTMLElement
     const items: HTMLElement[] = [];
 
     if (found.length) {
-      items.push(h('p', { class: 'search-heading' }, 'Sherms'));
+      items.push(h('p', { class: 'search-heading' }, t('search.sherms')));
       for (const s of found) {
         items.push(h('button', { class: 'search-item', type: 'button', role: 'option', onclick: () => { close(); onSherm(s); } },
           s.thumb ? h('img', { src: s.thumb, alt: '', loading: 'lazy' }) : h('span', { class: 'search-icon' }, icon(MapPin, 18)),
@@ -57,14 +58,14 @@ export function createSearch({ sherms, onSherm, onPlace }: Options): HTMLElement
       }
     }
     if (places.length) {
-      items.push(h('p', { class: 'search-heading' }, 'Orte'));
+      items.push(h('p', { class: 'search-heading' }, t('search.places')));
       for (const p of places) {
         items.push(h('button', { class: 'search-item', type: 'button', role: 'option', onclick: () => { close(); onPlace(p); } },
           h('span', { class: 'search-icon' }, icon(MapPin, 18)),
           h('span', {}, h('strong', {}, p.name), p.detail ? h('small', {}, p.detail) : null)));
       }
     }
-    if (!items.length && q.length >= 3) items.push(h('p', { class: 'search-empty' }, 'Nichts gefunden'));
+    if (!items.length && q.length >= 3) items.push(h('p', { class: 'search-empty' }, t('search.empty')));
     results.replaceChildren(...items);
   }
 

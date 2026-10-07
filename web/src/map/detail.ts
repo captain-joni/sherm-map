@@ -6,15 +6,7 @@ import { api, ApiError, type ReactionCounts } from '../lib/api.ts';
 import { deviceId, myReactions, setMyReaction } from '../lib/device.ts';
 import { h, icon, toast } from '../lib/dom.ts';
 import { relativeTime } from '../lib/format.ts';
-
-const REASON_LABELS: Record<ReportReason, string> = {
-  privacy: 'Person, Gesicht oder Kennzeichen zu erkennen',
-  illegal: 'Illegal',
-  offensive: 'Beleidigend oder anstößig',
-  spam: 'Spam oder Werbung',
-  wrong_location: 'Falscher Ort',
-  other: 'Etwas anderes',
-};
+import { errorMessage, reasonLabel, t } from '../lib/i18n.ts';
 
 export function renderDetail(sherm: PublicSherm): HTMLElement {
   const root = h('article', { class: 'detail' });
@@ -27,7 +19,7 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
       h('h2', {}, sherm.title),
       h('p', { class: 'detail-meta' },
         place ? h('span', {}, icon(MapPin, 14), place) : null,
-        h('span', {}, `eingetragen ${relativeTime(sherm.created_at)}`))),
+        h('span', {}, t('detail.added', { time: relativeTime(sherm.created_at) })))),
   );
 
   if (sherm.photo) {
@@ -44,13 +36,13 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
   }
 
   if (sherm.probably_gone) {
-    root.append(h('p', { class: 'badge badge-warn' }, 'Wahrscheinlich nicht mehr da'));
+    root.append(h('p', { class: 'badge badge-warn' }, t('detail.probablyGone')));
   }
   if (sherm.description) root.append(h('p', { class: 'detail-description' }, sherm.description));
 
   // Aktionen
   const likeButton = h('button', { class: 'chip-button', type: 'button', 'aria-pressed': 'false' });
-  const shareButton = h('button', { class: 'chip-button', type: 'button', onclick: () => share(sherm) }, icon(Share2, 18), 'Teilen');
+  const shareButton = h('button', { class: 'chip-button', type: 'button', onclick: () => share(sherm) }, icon(Share2, 18), t('detail.share'));
   root.append(h('div', { class: 'detail-actions' }, likeButton, shareButton));
 
   // Noch da?
@@ -58,7 +50,7 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
   const stillButton = h('button', { class: 'chip-button', type: 'button', 'aria-pressed': 'false' });
   const goneButton = h('button', { class: 'chip-button', type: 'button', 'aria-pressed': 'false' });
   root.append(h('section', { class: 'detail-still' },
-    h('h3', {}, 'Ist der Sherm noch da?'), confirmed, h('div', { class: 'detail-actions' }, stillButton, goneButton)));
+    h('h3', {}, t('detail.stillThereQuestion')), confirmed, h('div', { class: 'detail-actions' }, stillButton, goneButton)));
 
   let counts: ReactionCounts = {
     like_count: sherm.like_count, still_there_count: sherm.still_there_count,
@@ -73,12 +65,12 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
       button.setAttribute('aria-pressed', String(active));
       button.classList.toggle('active', active);
     };
-    set(likeButton, 'like', Heart, 'Gefällt mir', counts.like_count);
-    set(stillButton, 'still_there', Check, 'Noch da', counts.still_there_count);
-    set(goneButton, 'gone', CircleX, 'Weg', counts.gone_count);
+    set(likeButton, 'like', Heart, t('detail.like'), counts.like_count);
+    set(stillButton, 'still_there', Check, t('detail.stillThere'), counts.still_there_count);
+    set(goneButton, 'gone', CircleX, t('detail.gone'), counts.gone_count);
     confirmed.textContent = counts.last_confirmed_at
-      ? `Zuletzt bestätigt ${relativeTime(counts.last_confirmed_at)}`
-      : 'Noch von niemandem bestätigt';
+      ? t('detail.confirmed', { time: relativeTime(counts.last_confirmed_at) })
+      : t('detail.notConfirmed');
   }
 
   async function toggle(kind: ReactionKind) {
@@ -90,7 +82,7 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
       setMyReaction(sherm.id, kind, !active);
       render();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Hat nicht geklappt');
+      toast(err instanceof ApiError ? errorMessage(err.code, err.message) : t('common.failed'));
     }
   }
   likeButton.addEventListener('click', () => toggle('like'));
@@ -99,7 +91,7 @@ export function renderDetail(sherm: PublicSherm): HTMLElement {
   render();
 
   root.append(h('footer', { class: 'detail-footer' },
-    h('button', { class: 'link-button', type: 'button', onclick: () => openReportDialog(sherm) }, icon(Flag, 16), 'Sherm melden')));
+    h('button', { class: 'link-button', type: 'button', onclick: () => openReportDialog(sherm) }, icon(Flag, 16), t('detail.report'))));
 
   return root;
 }
@@ -120,7 +112,7 @@ async function share(sherm: PublicSherm) {
   }
   try {
     await navigator.clipboard.writeText(url);
-    toast('Link kopiert');
+    toast(t('detail.linkCopied'));
   } catch {
     toast(url);
   }
@@ -129,24 +121,24 @@ async function share(sherm: PublicSherm) {
 function openViewer(src: string, alt: string) {
   const dialog = h('dialog', { class: 'viewer', onclick: () => dialog.close() },
     h('img', { src, alt }),
-    h('button', { class: 'icon-button viewer-close', type: 'button', 'aria-label': 'Schließen' }, icon(X)));
+    h('button', { class: 'icon-button viewer-close', type: 'button', 'aria-label': t('common.close') }, icon(X)));
   dialog.addEventListener('close', () => dialog.remove());
   document.body.append(dialog);
   dialog.showModal();
 }
 
 function openReportDialog(sherm: PublicSherm) {
-  const comment = h('textarea', { name: 'comment', rows: 3, maxlength: LIMITS.reportCommentMax, placeholder: 'Optional: was ist das Problem?' });
+  const comment = h('textarea', { name: 'comment', rows: 3, maxlength: LIMITS.reportCommentMax, placeholder: t('report.comment') });
   const options = REPORT_REASONS.map(reason =>
-    h('label', { class: 'radio' }, h('input', { type: 'radio', name: 'reason', value: reason, required: true }), REASON_LABELS[reason]));
-  const submit = h('button', { class: 'button primary', type: 'submit' }, 'Melden');
+    h('label', { class: 'radio' }, h('input', { type: 'radio', name: 'reason', value: reason, required: true }), reasonLabel(reason)));
+  const submit = h('button', { class: 'button primary', type: 'submit' }, t('report.submit'));
   const form = h('form', { method: 'dialog', class: 'dialog-form' },
-    h('h2', {}, 'Sherm melden'),
-    h('p', { class: 'muted' }, 'Wir schauen uns das an und entfernen den Sherm, wenn nötig.'),
+    h('h2', {}, t('report.title')),
+    h('p', { class: 'muted' }, t('report.intro')),
     h('fieldset', {}, ...options),
     comment,
     h('div', { class: 'dialog-buttons' },
-      h('button', { class: 'button', type: 'button', onclick: () => dialog.close() }, 'Abbrechen'),
+      h('button', { class: 'button', type: 'button', onclick: () => dialog.close() }, t('common.cancel')),
       submit));
   const dialog = h('dialog', { class: 'dialog' }, form);
 
@@ -158,10 +150,10 @@ function openReportDialog(sherm: PublicSherm) {
     try {
       await api.report(sherm.id, reason, comment.value.trim() || null);
       dialog.close();
-      toast('Danke, wir schauen es uns an');
+      toast(t('report.thanks'));
     } catch (err) {
       submit.disabled = false;
-      toast(err instanceof ApiError ? err.message : 'Melden hat nicht geklappt');
+      toast(err instanceof ApiError ? errorMessage(err.code, err.message) : t('report.failed'));
     }
   });
   dialog.addEventListener('close', () => dialog.remove());

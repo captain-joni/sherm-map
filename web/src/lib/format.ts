@@ -1,4 +1,6 @@
-const rtf = new Intl.RelativeTimeFormat('de', { numeric: 'auto' });
+import { locale, t } from './i18n.ts';
+
+const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 365 * 24 * 3600], ['month', 30 * 24 * 3600], ['week', 7 * 24 * 3600],
   ['day', 24 * 3600], ['hour', 3600], ['minute', 60],
@@ -10,13 +12,13 @@ export function relativeTime(iso: string, now = Date.now()): string {
   for (const [unit, size] of UNITS) {
     if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
   }
-  return 'gerade eben';
+  return t('time.justNow');
 }
 
 export function formatDistance(meters: number): string {
   // \u00a0: Zahl und Einheit nicht umbrechen
   if (meters < 1000) return `${Math.round(meters / 10) * 10}\u00a0m`;
-  return `${(meters / 1000).toLocaleString('de-DE', { maximumFractionDigits: meters < 10_000 ? 1 : 0 })}\u00a0km`;
+  return `${(meters / 1000).toLocaleString(locale, { maximumFractionDigits: meters < 10_000 ? 1 : 0 })}\u00a0km`;
 }
 
 // Entfernung zweier Punkte auf der Erde in Metern (Haversine)

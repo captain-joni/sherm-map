@@ -79,7 +79,7 @@ export function publicRouter({ pool, publicUrl, notify, hasher, limits, geocode 
         meta = await processPhoto(req.file.buffer, storageKey);
       } catch {
         await deletePhotoFiles(storageKey);
-        throw new HttpError(400, 'Bild konnte nicht verarbeitet werden');
+        throw new HttpError(400, 'Bild konnte nicht verarbeitet werden', undefined, 'image_failed');
       }
     }
 
@@ -200,7 +200,7 @@ export function publicRouter({ pool, publicUrl, notify, hasher, limits, geocode 
       res.json(await geocode(q));
     } catch (err) {
       console.error('Geocoder:', (err as Error).message);
-      throw new HttpError(502, 'Ortssuche gerade nicht erreichbar');
+      throw new HttpError(502, 'Ortssuche gerade nicht erreichbar', undefined, 'geocoder_unavailable');
     }
   });
 
