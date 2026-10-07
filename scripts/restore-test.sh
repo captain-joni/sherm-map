@@ -2,16 +2,18 @@
 # Prüft, ob ein Backup wirklich wiederherstellbar ist, ohne die echte DB anzufassen:
 # Prüfsummen checken, DB-Dump in einen Wegwerf-Container einspielen, Zeilenzahlen vergleichen.
 #   scripts/restore-test.sh [backup.tar.gz]     (Default: neuestes Backup in $BACKUP_DIR)
-# Exit-Code 0 = alles gut. Gedacht für einen monatlichen Cronjob mit Alarm bei Fehler.
+# Exit-Code 0 = alles gut. Gedacht für einen monatlichen Cronjob; Fehler gehen an NOTIFY_WEBHOOK_URL
+# (event "restore_test.failed").
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
+NOTIFY_EVENT=restore_test
 
 file=${1:-$(ls -1 "$BACKUP_DIR"/sherm-backup-*.tar.gz 2>/dev/null | sort | tail -1)}
 [[ -n $file ]] || die "Kein Backup in $BACKUP_DIR gefunden"
 image=${POSTGIS_IMAGE:-postgis/postgis:15-3.3}
 container=sherm-restore-test-$$
 work=$(mktemp -d)
-trap 'docker rm -f "$container" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+at_exit 'docker rm -f "$container" >/dev/null 2>&1; rm -rf "$work"'
 
 log "Teste $file"
 verify_backup "$file" "$work"
@@ -40,3 +42,6 @@ if [[ $expected != "$actual" ]]; then
   Wiederhergest.: $actual"
 fi
 log "✅ Restore-Test bestanden: $actual"
+if [[ ${BACKUP_NOTIFY_SUCCESS:-false} == true ]]; then
+  notify restore_test.succeeded "Restore-Test bestanden: $(basename "$file")" "$file"
+fi
