@@ -15,7 +15,16 @@ Status:
   - overview, review queue (keys A/R/E/S, swipe, undo), detail with editing and the photo editor
   - list with filters, bulk actions and map view
   - gallery with starred-photo ZIP, reports, audit log, users, system
-- **Phase 7:** not started.
+- **Phase 7:** done on branch `rebuild`:
+  - v1 code removed; the Node 24 image runs as non-root with a healthcheck
+  - compose for v2, cut-over runbook and rollback in `docs/operations.md`
+  - 5 Playwright E2E flows, GitHub Actions CI
+- **Still open before going live:**
+  - Dress rehearsal with a copy of the real prod data.
+  - Testing on a real iPhone and Android phone.
+  - Datenschutz text in the info dialog is a technical draft and needs a legal check.
+  - Alerting for failed backups.
+  - Open questions 1–7 below.
 
 Rebuild work happens on the **`rebuild` branch**. `main` stays deployable for hotfixes to the running v1 app.
 

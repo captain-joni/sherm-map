@@ -1,4 +1,5 @@
-# Secrets kommen aus .env neben dieser Datei (Vorlage: .env.example)
+# Sherm Map v2. Secrets kommen aus .env neben dieser Datei (Vorlage: .env.example).
+# Das Schema legt das Backend beim Start selbst an bzw. migriert es (db/migrations).
 services:
   db:
     image: postgis/postgis:15-3.3
@@ -12,8 +13,7 @@ services:
     networks:
       - default
     volumes:
-      - /opt/nfs/sherm-map/pgdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
+      - ${PGDATA_DIR:-/opt/nfs/sherm-map/pgdata}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -21,20 +21,23 @@ services:
       retries: 10
 
   backend:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
+    image: sherm-map:latest
     container_name: sherm-backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
+      NODE_ENV: production
       PORT: 3000
       TRUST_PROXY: 1   # Traefik davor
+      PUBLIC_URL: ${PUBLIC_URL:-https://map.sherm.fun}
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
-      ADMIN_USER: ${ADMIN_USER:-admin}
+      HASH_SECRET: ${HASH_SECRET:?HASH_SECRET fehlt in .env}
+      ADMIN_USER: ${ADMIN_USER:-}
       ADMIN_PASS: ${ADMIN_PASS:-}
     networks:
       - proxy
@@ -51,11 +54,12 @@ services:
       - "traefik.http.routers.sherm-secure.service=sherm"
       - "traefik.http.services.sherm.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"
-
-    #ports:
-    #  - "3000:3000"
     volumes:
-      - /opt/nfs/sherm-map/uploads:/usr/src/app/uploads   # damit Uploads persistent sind      
+      # Gehört User 1000 (node im Container): einmalig chown -R 1000:1000 <ordner> auf dem Host
+      - ${UPLOADS_DIR:-/opt/nfs/sherm-map/uploads}:/app/uploads
+      # Nur lesend, damit das Admin-Panel den Backup-Status zeigen kann (scripts/backup.sh schreibt dorthin)
+      - ${BACKUP_DIR:-./backups}:/app/backups:ro
+
 networks:
-  proxy: 
+  proxy:
     external: true

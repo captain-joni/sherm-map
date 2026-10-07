@@ -1,26 +1,39 @@
-# 1. Base Image
-FROM node:20-alpine
+# Sherm Map v2: Frontend bauen, dann schlankes Laufzeit-Image (Backend + gebautes Frontend)
 
-# 2. Arbeitsverzeichnis im Container
-WORKDIR /usr/src/app
+# 1. Abhängigkeiten (alle, auch dev, für den Frontend-Build)
+FROM node:24-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY shared/package.json shared/
+COPY backend/package.json backend/
+COPY web/package.json web/
+RUN npm ci
 
-# 3. Package.json & package-lock.json kopieren
-COPY package*.json ./
+# 2. Frontend bauen
+FROM deps AS build
+COPY tsconfig.base.json ./
+COPY shared shared
+COPY web web
+RUN npm run build -w web
 
-# 4. Dependencies installieren (exakt nach Lockfile, ohne devDependencies)
-RUN npm ci --omit=dev && npm cache clean --force
-
-# 5. Restlichen Code kopieren (.dockerignore hält .env, uploads, node_modules raus)
-COPY . .
-RUN mkdir -p uploads
-
+# 3. Laufzeit: nur Backend-Abhängigkeiten, läuft nicht als root
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY shared/package.json shared/
+COPY backend/package.json backend/
+COPY web/package.json web/
+RUN npm ci --omit=dev -w backend -w shared && npm cache clean --force
+COPY shared shared
+COPY backend/src backend/src
+COPY db/migrations db/migrations
+COPY --from=build /app/web/dist web/dist
+RUN mkdir -p uploads backups && chown node:node uploads backups
+USER node
 
-# 6. Port freigeben (muss zu docker-compose passen)
 EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-# 7. Startbefehl
-CMD ["node", "server.js"]
+CMD ["node", "--import", "tsx", "backend/src/server.ts"]

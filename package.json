@@ -1,29 +1,11 @@
 {
   "name": "sherm-map",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "version": "2.0.0",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js",
     "build": "npm run build -w web",
-    "check": "node --check server.js && node --check db.js",
-    "typecheck": "npm run typecheck --workspaces",
-    "test:v2": "npm test -w backend",
-    "migrate": "npm run migrate -w backend"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.2.4",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.7.1",
-    "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^2.0.2",
-    "pg": "^8.18.0"
+    "typecheck": "npm run typecheck --workspaces && tsc -p e2e/tsconfig.json",
+    "test": "npm test -w backend",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -43,5 +25,7 @@
     "shared",
     "backend",
     "web"
-  ]
+  ],
+  "private": true,
+  "type": "module"
 }

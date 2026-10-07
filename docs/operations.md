@@ -125,22 +125,45 @@ npm run import -w backend -- path/to/sherm-export-....tar.gz
 - Migrations are plain SQL files: `db/migrations/NNNN_name.sql`. They run in order, each in its own transaction, and are recorded in `schema_migrations` with a checksum.
 - **Never edit a migration that has been applied anywhere.** The runner refuses to start if a checksum changed. Make every change as a new file.
 - `0001_baseline.sql` is the exact v1 schema with `IF NOT EXISTS`. On the existing production DB it changes nothing.
-- The backend will run migrations on start (Phase 2). Until then, run them by hand:
+- **The backend applies pending migrations on every start**, using an advisory lock so two containers can't run them at the same time. To run them by hand: `docker compose exec backend npm run migrate -w backend`.
+
+## Commands inside the container
+
+The image contains the backend scripts. On the server, in the repo directory:
 
 ```bash
-npm run migrate -w backend
+docker compose exec backend npm run load-countries -w backend      # load/refresh country polygons
+docker compose exec backend npm run reprocess-images -w backend    # create missing image variants
+docker compose exec backend npm run export -w backend -- --out /app/uploads/export   # export (lands in the uploads folder)
+docker compose exec -it backend npm run set-password -w backend -- <username> [--admin]  # emergency: set a password / create an admin
 ```
 
-## Production migration v1 → v2 (cut-over, rehearse first!)
+Export and import also work from a developer machine with the repo checked out and `DATABASE_URL`/`UPLOADS_DIR` pointing at the right place.
 
-1. `scripts/backup.sh`, then `scripts/restore-test.sh`. Copy the backup off the server.
-2. Stop the backend: `docker compose stop backend`.
-3. `npm run migrate -w backend` turns `validated` into `status`, moves images into `photos`, and so on.
-4. `npm run load-countries -w backend` loads the country polygons (13 MB download) and assigns a country to every sherm.
-5. `npm run reprocess-images -w backend` strips EXIF and creates the original/display/thumb variants. It lists photos that failed (corrupt or missing files) and old files that belong to no sherm.
-6. Check the result, then **after** a successful test of the new app: `npm run reprocess-images -w backend -- --delete-legacy`.
-7. Deploy the v2 app.
+## Production migration v1 → v2 (cut-over)
 
-**Rollback:** redeploy the old image and `scripts/restore.sh <backup from step 1> --force`.
+**Rehearse it first**: restore a prod backup locally (`scripts/restore.sh` with `DB_CONTAINER`, or into a local compose setup) and run steps 4–8 against it.
 
-Steps 3–5 need `DATABASE_URL` pointing at the DB, e.g. via the `127.0.0.1:5432` port binding, and `UPLOADS_DIR=/opt/nfs/sherm-map/uploads`. In Phase 2 they move into the backend container.
+1. **Backup:** run `scripts/backup.sh`, then `scripts/restore-test.sh`. Copy the backup off the server.
+2. **Keep the old image for rollback:** `docker tag $(docker compose images -q backend) sherm-map:v1`.
+3. **Update `.env`:** add `HASH_SECRET` (`openssl rand -hex 32`) and `PUBLIC_URL`. `ADMIN_USER`/`ADMIN_PASS` can stay; existing users and their passwords are kept, since v1 already used bcrypt.
+4. **Uploads ownership:** v2 runs as user 1000 (`node`) instead of root, so the folder needs `chown -R 1000:1000 /opt/nfs/sherm-map/uploads`.
+   - If the NFS export doesn't allow `chown` (root_squash), change ownership on the NFS server instead, or as a stopgap add `user: "0:0"` to the backend service.
+5. **Deploy:** `git pull` (main with v2), then `docker compose up -d --build`. On start, the backend migrates the DB: `validated` becomes `status`, images move into `photos`, and so on. Check with `docker compose logs backend`.
+6. **Countries:** `docker compose exec backend npm run load-countries -w backend` (13 MB download).
+7. **Images:** `docker compose exec backend npm run reprocess-images -w backend` strips EXIF and creates the original/display/thumb variants.
+   - It lists photos that failed (corrupt or missing files) and old files that belong to no sherm.
+   - Until this has run, old photos don't show up on the map.
+8. **Smoke test:**
+   - map loads, sherms with photos appear
+   - `/admin` login works
+   - review queue, a share link, and adding a test sherm all work
+9. **Clean up, a few days later once everything is fine:** `docker compose exec backend npm run reprocess-images -w backend -- --delete-legacy` deletes the old v1 files.
+
+**Rollback**:
+1. `docker compose stop backend`
+2. `scripts/restore.sh <backup from step 1> --force`
+3. In docker-compose.yml, set `image: sherm-map:v1` and remove `build:` (or check out the old commit).
+4. `docker compose up -d backend`
+
+The v1 app can't read the migrated schema, so the restore is required.

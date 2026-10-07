@@ -67,14 +67,17 @@ export function askDialog(opts: {
   input?: { label: string; required?: boolean; presets?: string[] };
 }): Promise<string | null> {
   return new Promise(resolve => {
-    const input = opts.input ? h('textarea', { rows: 2, maxlength: 300 }) : null;
+    const input = opts.input ? h('textarea', { id: 'ask-dialog-input', rows: 2, maxlength: 300 }) : null;
     const presets = opts.input?.presets?.map(p =>
       h('button', { class: 'chip', type: 'button', onclick: () => { input!.value = p; input!.focus(); } }, p));
     const confirm = h('button', { class: `button ${opts.danger ? 'danger' : 'primary'}`, type: 'submit' }, opts.confirm);
     const form = h('form', { method: 'dialog', class: 'dialog-form' },
       h('h2', {}, opts.title),
       opts.text ? h('p', { class: 'muted' }, opts.text) : null,
-      opts.input ? h('label', { class: 'field' }, h('span', {}, opts.input.label), presets?.length ? h('div', { class: 'chips' }, ...presets) : null, input) : null,
+      // Kein <label> um alles: das würde seinen Text dem ersten Preset-Knopf als Namen geben
+      opts.input ? h('div', { class: 'field' },
+        h('label', { for: 'ask-dialog-input' }, opts.input.label),
+        presets?.length ? h('div', { class: 'chips' }, ...presets) : null, input) : null,
       h('div', { class: 'dialog-buttons' },
         h('button', { class: 'button', type: 'button', onclick: () => dialog.close() }, 'Abbrechen'),
         confirm));
