@@ -13,6 +13,8 @@ import { mediaRouter } from './routes/media.ts';
 import { publicRouter } from './routes/public.ts';
 import { createGeocoder, type Geocoder } from './services/geocode.ts';
 import { makeHasher } from './services/hashing.ts';
+import { indexHtmlLoader, injectOg, ogTags } from './services/share.ts';
+import { getPublicSherm } from './services/sherms.ts';
 
 export interface AppDeps {
   pool: pg.Pool;
@@ -49,7 +51,27 @@ export function createApp({ pool, cfg, geocode, rateLimitScale = 1 }: AppDeps): 
 
   // Frontend (Phase 3): gebautes web/dist ausliefern, unbekannte Pfade ohne Dateiendung -> index.html
   if (existsSync(cfg.webDist)) {
-    app.use(express.static(cfg.webDist, { index: 'index.html', maxAge: '1h' }));
+    const indexHtml = indexHtmlLoader(path.join(cfg.webDist, 'index.html'), cfg.production);
+
+    // Geteilte Links mit Vorschau (Titel + Foto) für Messenger
+    app.get('/s/:id', async (req, res) => {
+      const id = Number(req.params.id);
+      const sherm = Number.isInteger(id) && id > 0 ? await getPublicSherm(pool, id) : null;
+      const html = await indexHtml();
+      res.set('Cache-Control', 'no-cache');
+      res.type('html').send(sherm ? injectOg(html, ogTags(sherm, cfg.publicUrl)) : html);
+    });
+
+    // sw.js und index.html nie lange cachen, sonst bleiben Nutzer auf alten Versionen hängen
+    app.use(express.static(cfg.webDist, {
+      index: 'index.html',
+      setHeaders: (res, file) => {
+        const name = path.basename(file);
+        res.set('Cache-Control', file.includes(`${path.sep}assets${path.sep}`)
+          ? 'public, max-age=31536000, immutable'
+          : name === 'sw.js' || name.endsWith('.html') || name.endsWith('.webmanifest') ? 'no-cache' : 'public, max-age=86400');
+      },
+    }));
     app.get(/^\/admin(\/.*)?$/, (_req, res) => res.sendFile(path.join(cfg.webDist, 'admin', 'index.html')));
     app.get(/^[^.]*$/, (_req, res) => res.sendFile(path.join(cfg.webDist, 'index.html')));
   }

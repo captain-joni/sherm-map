@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "build": "tsc",
+    "build": "npm run build -w web",
     "check": "node --check server.js && node --check db.js",
     "typecheck": "npm run typecheck --workspaces",
     "test:v2": "npm test -w backend",
@@ -26,6 +26,7 @@
     "pg": "^8.18.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
@@ -39,6 +40,7 @@
   },
   "workspaces": [
     "shared",
-    "backend"
+    "backend",
+    "web"
   ]
 }

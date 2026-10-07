@@ -2,14 +2,17 @@ import type { RequestHandler } from 'express';
 import helmet from 'helmet';
 import { forbidden } from './errors.ts';
 
+const TILE_HOSTS = ['https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org'];
+
 export function securityHeaders(): RequestHandler {
   return helmet({
     contentSecurityPolicy: {
       directives: {
         'script-src': ["'self'"],
         'style-src': ["'self'", "'unsafe-inline'"],
-        'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org'],
-        'connect-src': ["'self'"],
+        'img-src': ["'self'", 'data:', 'blob:', ...TILE_HOSTS],
+        // Der Service Worker lädt die Kacheln per fetch (zum Cachen), dafür gilt connect-src
+        'connect-src': ["'self'", ...TILE_HOSTS],
         'worker-src': ["'self'"],
         'manifest-src': ["'self'"],
         'upgrade-insecure-requests': null, // HTTPS macht Traefik, lokal läuft alles über http

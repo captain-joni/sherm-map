@@ -101,6 +101,14 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
     it('geht auch ohne Foto', async () => {
       expect((await submit({}, null)).status).toBe(201);
     });
+
+    it('geht ohne Beschreibung (Feld fehlt ganz, wie aus dem Frontend)', async () => {
+      const res = await request(env.app).post('/api/sherms')
+        .field('uuid', randomUUID()).field('title', 'Nur Titel').field('lat', '49.4').field('lng', '8.7');
+      expect(res.status).toBe(201);
+      const { rows } = await env.pool.query('SELECT description FROM markers WHERE id = $1', [res.body.id]);
+      expect(rows[0].description).toBeNull();
+    });
   });
 
   describe('Sichtbarkeit', () => {
@@ -402,6 +410,8 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       const res = await request(env.app).get('/api/health');
       expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
       expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+      // ohne das blockiert der Service Worker die Kartenkacheln (graue Karte)
+      expect(res.headers['content-security-policy']).toContain("connect-src 'self' https://tile.openstreetmap.org");
       expect(res.headers['x-powered-by']).toBeUndefined();
     });
   });

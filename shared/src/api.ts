@@ -1,38 +1,8 @@
 // API-Vertrag zwischen Backend und Frontend: Grenzwerte, Enums, Eingabe-Schemas und Antworttypen.
 import { z } from 'zod';
+import { LIMITS, REACTION_KINDS, REPORT_REASONS, REPORT_STATUSES, SHERM_STATUSES, USER_ROLES, type ShermStatus, type UserRole } from './constants.ts';
 
-export const LIMITS = {
-  titleMax: 100,
-  descriptionMax: 1000,
-  placeNameMax: 120,
-  reportCommentMax: 500,
-  rejectReasonMax: 300,
-  imageMaxBytes: 15 * 1024 * 1024,
-  usernameMax: 50,
-  passwordMin: 12,
-  passwordMax: 200,
-  pageSizeMax: 200,
-} as const;
-
-export const SHERM_STATUSES = ['pending', 'approved', 'rejected', 'hidden'] as const;
-export const USER_ROLES = ['moderator', 'admin'] as const;
-export const REPORT_REASONS = ['privacy', 'illegal', 'offensive', 'spam', 'wrong_location', 'other'] as const;
-export const REPORT_STATUSES = ['open', 'resolved', 'dismissed'] as const;
-export const REACTION_KINDS = ['like', 'still_there', 'gone'] as const;
-export const IMAGE_VARIANTS = ['display', 'thumb'] as const; // öffentlich; 'original' nur für Admins
-
-export type ShermStatus = (typeof SHERM_STATUSES)[number];
-export type UserRole = (typeof USER_ROLES)[number];
-export type ReportReason = (typeof REPORT_REASONS)[number];
-export type ReportStatus = (typeof REPORT_STATUSES)[number];
-export type ReactionKind = (typeof REACTION_KINDS)[number];
-
-// "Wahrscheinlich weg": mindestens 3 Weg-Stimmen und mehr als doppelt so viele wie "noch da"
-export const PROBABLY_GONE = { minGone: 3, ratio: 2 } as const;
-export function isProbablyGone(s: { gone_count: number; still_there_count: number }): boolean {
-  return s.gone_count >= PROBABLY_GONE.minGone && s.gone_count > PROBABLY_GONE.ratio * s.still_there_count;
-}
-
+export * from './constants.ts';
 
 // Hilfen
 
@@ -41,8 +11,9 @@ const cleanText = (value: string) => value.replace(/[\u0000-\u0008\u000B\u000C\u
 
 const text = (max: number) => z.string().transform(cleanText).pipe(z.string().max(max));
 const requiredText = (max: number) => z.string().transform(cleanText).pipe(z.string().min(1).max(max));
+// Fehlt das Feld, ist es leer oder null -> null. nullish() statt union, sonst gilt der Key in zod 4 als Pflicht.
 const optionalText = (max: number) =>
-  z.union([z.string(), z.null(), z.undefined()])
+  z.string().nullish()
     .transform(v => (v == null ? null : cleanText(v) || null))
     .pipe(z.string().max(max).nullable());
 

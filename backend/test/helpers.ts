@@ -24,7 +24,7 @@ function dbUrl(name: string): string {
   return url.toString();
 }
 
-export async function setupTestApp({ rateLimitScale = 100 } = {}) {
+export async function setupTestApp({ rateLimitScale = 100, webDist }: { rateLimitScale?: number; webDist?: string } = {}) {
   const name = `sherm_test_api_${randomBytes(4).toString('hex')}`;
   const admin = new pg.Pool({ connectionString: ADMIN_URL });
   await admin.query(`CREATE DATABASE ${name}`);
@@ -39,7 +39,7 @@ export async function setupTestApp({ rateLimitScale = 100 } = {}) {
     PUBLIC_URL: 'http://localhost:3000',
     ADMIN_USER: ADMIN.username,
     ADMIN_PASS: ADMIN.password,
-    WEB_DIST: path.join(uploads, 'no-web-dist'),
+    WEB_DIST: webDist ?? path.join(uploads, 'no-web-dist'),
     BACKUP_DIR: path.join(uploads, 'no-backups'),
   });
   await ensureAdmin(pool, cfg);
