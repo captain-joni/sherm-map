@@ -26,6 +26,11 @@ The v2 code lives next to the v1 app until the cut-over. `main` stays the deploy
   - Photos live in the `photos` table and are stored as `uploads/{original,display,thumb}/<storage_key>`. `legacy_path` points to the v1 file until it has been reprocessed.
   - `country_code` is set by a trigger from the `country_parts` table.
   - Like and "still there" counters are maintained by a trigger on `reactions`.
+- **Backend v2** (`backend/src/`):
+  - `app.ts` creates the Express app with injected `pool` and `cfg`, so tests can build their own; `server.ts` is the entry point (`npm run dev -w backend`).
+  - Routes live in `routes/` (public, media, auth, `admin/*`). Request schemas and response types are in `shared/src/api.ts`. The API reference is `docs/api.md`.
+  - Every admin write goes through `audit()`, inside `inTransaction()` when it changes data.
+  - Server env adds `HASH_SECRET` (≥32 chars, for pseudonymous IP/device hashes) and `PUBLIC_URL`; see `loadServerConfig()`.
 - **Scripts**:
   - backend: `npm run {export,import,reprocess-images,load-countries} -w backend`
   - host, bash: `scripts/{backup,restore,restore-test}.sh`

@@ -20,6 +20,12 @@ export function variantPath(storageKey: string, variant: Variant): string {
   return path.join(config.uploadsDir, variant, safeKey(storageKey) + VARIANTS[variant]);
 }
 
+// Vor einer Bildbearbeitung (z.B. Unkenntlichmachen) wird das Original hier aufgehoben, bis der
+// Sherm freigegeben ist. Nur für Admins.
+export function preEditPath(storageKey: string): string {
+  return path.join(config.uploadsDir, 'original', `${safeKey(storageKey)}.pre-edit.jpg`);
+}
+
 export function legacyFilePath(legacyPath: string): string {
   return path.join(config.uploadsDir, path.basename(legacyPath));
 }
@@ -49,9 +55,10 @@ export async function deletePhotoFiles(storageKey: string): Promise<void> {
   for (const variant of Object.keys(VARIANTS) as Variant[]) {
     await rm(variantPath(storageKey, variant), { force: true });
   }
+  await rm(preEditPath(storageKey), { force: true });
 }
 
-function safeKey(storageKey: string): string {
+export function safeKey(storageKey: string): string {
   if (!/^[A-Za-z0-9-]{8,64}$/.test(storageKey)) throw new Error(`Ungültiger storage_key: ${storageKey}`);
   return storageKey;
 }

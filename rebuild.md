@@ -3,7 +3,8 @@
 Status:
 - **Phase 0:** done. Production runs the cleaned-up v1 app.
 - **Phase 1:** code done on branch `rebuild` and tested against a fake legacy DB. Still to do: the dress rehearsal with real prod data (1.5), and answers to open questions 1 and 2.
-- **Phases 2–7:** not started.
+- **Phase 2:** API done and tested on branch `rebuild` (`docs/api.md`, 32 API tests). Nothing is deployed yet; it ships together with the new frontend.
+- **Phases 3–7:** not started.
 
 Rebuild work happens on the **`rebuild` branch**. `main` stays deployable for hotfixes to the running v1 app.
 
@@ -214,9 +215,16 @@ Goal: a new API on the new schema, with secure image handling and roles.
   - reports: 10/h
   - login: 10 per 15 min
 - Spam honeypot: a hidden form field that bots fill in and humans don't.
+- **Decided:** there's no compatibility layer for the v1 frontend. The v2 API ships together with the new frontend (Phases 3–6) in one cut-over release (Phase 7).
+- **Implemented on top of the plan:**
+  - Trash with automatic purge after 30 days, plus purge of expired sessions (daily job).
+  - The photo edit can be undone (`/revert`).
+  - Bulk actions.
+  - The review detail shows sherms within 500 m and other submissions from the same source. This is only data; the duplicate *warning* in the UI is still open question 3.
+- **Left for Phase 6:** a zip download of all starred photos. Single originals can already be downloaded.
 - **Done when:**
-  - The API test suite covers every route, including auth/role denial and validation failures.
-  - The old frontend still works through a thin compatibility layer, or is switched over in the same release.
+  - [x] The API test suite covers every route, including auth/role denial, CSRF, rate limits and validation failures (`backend/test/api.test.ts`).
+  - [x] One cut-over release instead of a compatibility layer (see above).
 
 ---
 
