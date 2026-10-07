@@ -1,28 +1,31 @@
 {
   "name": "sherm-map",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "version": "2.0.0",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js",
-    "build": "tsc",
-    "check": "node --check server.js && node --check db.js"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.2.4",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.7.1",
-    "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^2.0.2",
-    "pg": "^8.18.0"
+    "build": "npm run build -w web",
+    "typecheck": "npm run typecheck --workspaces && tsc -p e2e/tsconfig.json",
+    "test": "npm test -w backend",
+    "e2e": "playwright test"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
-  }
+    "@playwright/test": "^1.63.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "@types/yazl": "^3.3.1",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "web"
+  ],
+  "private": true,
+  "type": "module"
 }
