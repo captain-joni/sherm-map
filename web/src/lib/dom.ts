@@ -29,6 +29,12 @@ export function append(parent: Element, ...children: Child[]): void {
   }
 }
 
+// replaceChildren, das wie h() leere Einträge (null, false) überspringt
+export function replace(parent: Element, ...children: Child[]): void {
+  parent.replaceChildren();
+  append(parent, ...children);
+}
+
 export function icon(node: IconNode, size = 22): SVGElement {
   return lucide(node, { width: size, height: size, 'aria-hidden': 'true', 'stroke-width': 2 });
 }

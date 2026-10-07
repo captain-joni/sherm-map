@@ -151,6 +151,13 @@ async function applyAction(
       await audit(client, user, action, id, { from: current.status, to: status, ...(reason ? { reason } : {}), ...extra });
       break;
     }
+    case 'reopen':
+      if (current.status === 'pending') return false;
+      await client.query(
+        `UPDATE markers SET status = 'pending', reject_reason = NULL, reviewed_at = NULL, reviewed_by = NULL, updated_at = now()
+         WHERE id = $1`, [id]);
+      await audit(client, user, 'reopen', id, { from: current.status, ...extra });
+      break;
     case 'delete':
       await client.query('UPDATE markers SET deleted_at = now(), updated_at = now() WHERE id = $1', [id]);
       await audit(client, user, 'delete', id, { status: current.status, ...extra });

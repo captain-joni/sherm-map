@@ -286,6 +286,14 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       expect(purgeLog.body.items).toHaveLength(1);
     });
 
+    it('Prüfung zurücknehmen (reopen)', async () => {
+      const sherm = await submitAndApprove();
+      const res = await admin.post(`/api/admin/sherms/${sherm.id}/reopen`).send({});
+      expect(res.body).toMatchObject({ status: 'pending', reviewed_by: null });
+      expect((await request(env.app).get(`/api/sherms/${sherm.id}`)).status).toBe(404);
+      expect((await admin.post(`/api/admin/sherms/${sherm.id}/reopen`).send({})).status).toBe(404); // schon pending
+    });
+
     it('Sammelaktionen', async () => {
       const ids = [(await submit()).body.id, (await submit()).body.id];
       const res = await admin.post('/api/admin/sherms/bulk').send({ ids: [...ids, 999999], action: 'approve' });
@@ -319,6 +327,15 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       expect(starred.body.items.map((p: { id: number }) => p.id)).toEqual([photoId]);
       expect(starred.body.items[0].sherm.id).toBe(sherm.id);
       expect((await admin.get('/api/admin/photos?page_size=1000')).status).toBe(400);
+
+      const zip = await admin.get('/api/admin/photos/starred.zip').buffer(true).parse((r, cb) => {
+        const chunks: Buffer[] = [];
+        r.on('data', (c: Buffer) => chunks.push(c));
+        r.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+      expect(zip.status).toBe(200);
+      expect((zip.body as Buffer).subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04])); // ZIP
+      expect((zip.body as Buffer).toString('latin1')).toContain(`sherm-${sherm.id}-test-sherm.jpg`);
     });
 
     it('Kennzahlen', async () => {

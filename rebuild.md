@@ -11,7 +11,11 @@ Status:
   - likes, "still there?", report
 
   Not yet tested on real iOS/Android devices.
-- **Phases 6–7:** not started.
+- **Phase 6 (admin):** built on branch `rebuild` (`web/src/admin/`) and checked in Chromium on desktop and phone:
+  - overview, review queue (keys A/R/E/S, swipe, undo), detail with editing and the photo editor
+  - list with filters, bulk actions and map view
+  - gallery with starred-photo ZIP, reports, audit log, users, system
+- **Phase 7:** not started.
 
 Rebuild work happens on the **`rebuild` branch**. `main` stays deployable for hotfixes to the running v1 app.
 
@@ -228,7 +232,7 @@ Goal: a new API on the new schema, with secure image handling and roles.
   - The photo edit can be undone (`/revert`).
   - Bulk actions.
   - The review detail shows sherms within 500 m and other submissions from the same source. This is only data; the duplicate *warning* in the UI is still open question 3.
-- **Left for Phase 6:** a zip download of all starred photos. Single originals can already be downloaded.
+- The zip download of starred photos was added in Phase 6, together with a `reopen` action (the queue's undo).
 - **Done when:**
   - [x] The API test suite covers every route, including auth/role denial, CSRF, rate limits and validation failures (`backend/test/api.test.ts`).
   - [x] One cut-over release instead of a compatibility layer (see above).

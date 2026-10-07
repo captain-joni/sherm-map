@@ -31,6 +31,14 @@ The v2 code lives next to the v1 app until the cut-over. `main` stays the deploy
   - Routes live in `routes/` (public, media, auth, `admin/*`). Request schemas and response types are in `shared/src/api.ts`. The API reference is `docs/api.md`.
   - Every admin write goes through `audit()`, inside `inTransaction()` when it changes data.
   - Server env adds `HASH_SECRET` (≥32 chars, for pseudonymous IP/device hashes) and `PUBLIC_URL`; see `loadServerConfig()`.
+- **Frontend v2** (`web/`, Vite + TS, no framework):
+  - Two entries: `index.html` → `src/map/` (public PWA) and `admin/index.html` → `src/admin/` (admin views in `views/`, building blocks in `components/`). The service worker is `src/sw.ts`.
+  - DOM is built with `h()` from `src/lib/dom.ts` (textContent only, never innerHTML with data). `replace()` instead of `replaceChildren()` when children can be null.
+  - **Import values from `@sherm/shared/constants`, types via `import type` from `@sherm/shared`.** Otherwise zod lands in the bundle; `npm run build -w web` fails if it does.
+  - Leaflet: import `L` from `src/map/leaflet.ts` (it sets the global for markercluster). Create maps only on attached elements, or watch them with a ResizeObserver; otherwise their height is 0.
+  - CSP: the service worker fetches tiles, so tile hosts must be in `connect-src` as well as `img-src` (`backend/src/http/security.ts`).
+  - CSS: `[hidden]` is forced to `display: none !important` in app.css.
+  - Dev: `npm run dev -w backend` plus `npm run dev -w web` (Vite proxies `/api` and `/media` to :3000).
 - **Scripts**:
   - backend: `npm run {export,import,reprocess-images,load-countries} -w backend`
   - host, bash: `scripts/{backup,restore,restore-test}.sh`

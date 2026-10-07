@@ -104,7 +104,8 @@ export const shermEditInput = z.object({
   lng: longitude.optional(),
 }).refine(v => (v.lat === undefined) === (v.lng === undefined), 'lat und lng nur zusammen ändern');
 
-export const SHERM_ACTIONS = ['approve', 'reject', 'hide', 'delete', 'restore'] as const;
+// reopen: Prüfung zurücknehmen, der Sherm ist wieder pending (für versehentliche Freigaben/Ablehnungen)
+export const SHERM_ACTIONS = ['approve', 'reject', 'hide', 'reopen', 'delete', 'restore'] as const;
 export type ShermAction = (typeof SHERM_ACTIONS)[number];
 
 export const shermActionInput = z.object({

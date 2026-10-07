@@ -54,11 +54,13 @@ The input schemas and response types live in `shared/src/api.ts`, so the fronten
 | GET | `/api/admin/sherms/:id` | `{ sherm, nearby (≤500 m), same_source (same submitter), reports, history (audit) }` |
 | PATCH | `/api/admin/sherms/:id` | `{ title?, description?, place_name?, lat?+lng? }`; changes are logged in the audit log |
 | POST | `/api/admin/sherms/:id/{approve,reject,hide}` | `reject` needs `{ reason }`. Approving deletes the pre-edit originals |
+| POST | `/api/admin/sherms/:id/reopen` | undoes a review; the sherm goes back to pending (the queue's undo button) |
 | POST | `/api/admin/sherms/:id/{delete,restore}` | **admin**. Soft delete; purged for good after 30 days |
 | POST | `/api/admin/sherms/bulk` | `{ ids[], action, reason? }` → `{ updated, ids }` |
 | GET | `/api/admin/media/{thumb,display,original,pre-edit}/<key>.<ext>` | any image; `?download` serves it as a download |
 | GET | `/api/admin/photos` | gallery `Page`. Filters: `status`, `country`, `starred` |
 | POST | `/api/admin/photos/:id/star` | `{ starred }` |
+| GET | `/api/admin/photos/starred.zip` | all starred originals as a ZIP (`sherm-<id>-<title>.jpg`) |
 | PUT | `/api/admin/photos/:id/image` | multipart `image`: the edited photo replaces all variants; the old original is kept as pre-edit until approval |
 | POST | `/api/admin/photos/:id/revert` | undo the photo edit |
 | GET | `/api/admin/reports?status=open` | grouped by sherm |

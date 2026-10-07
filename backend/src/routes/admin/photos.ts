@@ -1,6 +1,7 @@
 import { copyFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { Router } from 'express';
+import yazl from 'yazl';
 import type pg from 'pg';
 import { idParam, photoListQuery, starInput } from '@sherm/shared';
 import { currentUser } from '../../auth/sessions.ts';
@@ -44,6 +45,26 @@ export function adminPhotosRouter(pool: pg.Pool): Router {
       page: f.page,
       page_size: f.page_size,
     });
+  });
+
+  // Alle markierten Originale als ZIP (z.B. für Instagram). JPEGs sind schon komprimiert, daher "store".
+  router.get('/starred.zip', async (req, res) => {
+    const user = currentUser(req);
+    const { rows } = await pool.query(`
+      SELECT p.storage_key, m.id AS sherm_id, m.title FROM photos p JOIN markers m ON m.id = p.marker_id
+      WHERE p.starred AND p.processed_at IS NOT NULL AND m.deleted_at IS NULL ORDER BY p.id`);
+    const zip = new yazl.ZipFile();
+    for (const r of rows) {
+      const file = variantPath(r.storage_key, 'original');
+      if (!existsSync(file)) continue;
+      const slug = String(r.title).normalize('NFKD').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).toLowerCase();
+      zip.addFile(file, `sherm-${r.sherm_id}-${slug || 'foto'}.jpg`, { compress: false });
+    }
+    zip.end();
+    await audit(pool, user, 'download_starred', null, { count: rows.length });
+    res.set('Content-Type', 'application/zip');
+    res.attachment(`sherm-favoriten-${new Date().toISOString().slice(0, 10)}.zip`);
+    zip.outputStream.pipe(res);
   });
 
   router.post('/:id/star', async (req, res) => {
