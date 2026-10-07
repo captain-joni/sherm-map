@@ -449,6 +449,9 @@ describe.skipIf(!ADMIN_URL)('API v2', () => {
       // ohne das blockiert der Service Worker die Kartenkacheln (graue Karte)
       expect(res.headers['content-security-policy']).toContain("connect-src 'self' https://tile.openstreetmap.org");
       expect(res.headers['x-powered-by']).toBeUndefined();
+      // Einbettung auf sherm.fun per iframe erlaubt
+      expect(res.headers['content-security-policy']).toContain("frame-ancestors 'self' https://sherm.fun https://www.sherm.fun");
+      expect(res.headers['x-frame-options']).toBeUndefined();
     });
   });
 });

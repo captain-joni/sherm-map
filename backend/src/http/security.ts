@@ -4,10 +4,14 @@ import { forbidden } from './errors.ts';
 
 const TILE_HOSTS = ['https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org'];
 
-export function securityHeaders(): RequestHandler {
+// frameAncestors: Seiten, die die Karte per <iframe> einbetten dürfen (z.B. sherm.fun)
+export function securityHeaders(frameAncestors: string[] = []): RequestHandler {
   return helmet({
+    // X-Frame-Options kennt keine fremden Domains, frame-ancestors (CSP) ersetzt es
+    xFrameOptions: false,
     contentSecurityPolicy: {
       directives: {
+        'frame-ancestors': ["'self'", ...frameAncestors],
         'script-src': ["'self'"],
         'style-src': ["'self'", "'unsafe-inline'"],
         'img-src': ["'self'", 'data:', 'blob:', ...TILE_HOSTS],

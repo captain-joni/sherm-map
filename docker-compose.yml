@@ -41,6 +41,7 @@ services:
       ADMIN_PASS: ${ADMIN_PASS:-}
       NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}     # neue Sherms/Meldungen an z.B. n8n
       NOTIFY_WEBHOOK_TOKEN: ${NOTIFY_WEBHOOK_TOKEN:-}
+      FRAME_ANCESTORS: ${FRAME_ANCESTORS:-https://sherm.fun https://www.sherm.fun}   # dürfen die Karte per iframe einbetten
     networks:
       - proxy
       - default

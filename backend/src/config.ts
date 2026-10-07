@@ -33,6 +33,8 @@ const serverEnv = z.object({
   GEOCODER_URL: z.url().default('https://photon.komoot.io/api/'),
   NOTIFY_WEBHOOK_URL: z.union([z.url(), z.literal('')]).optional(),  // z.B. n8n, siehe services/notify.ts
   NOTIFY_WEBHOOK_TOKEN: z.string().optional(),
+  // Leerzeichen-getrennt; Seiten, die die Karte per iframe einbetten dürfen
+  FRAME_ANCESTORS: z.string().default('https://sherm.fun https://www.sherm.fun'),
 });
 
 export type ServerConfig = ReturnType<typeof loadServerConfig>;
@@ -54,6 +56,7 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env) {
     geocoderUrl: e.GEOCODER_URL,
     notifyWebhookUrl: e.NOTIFY_WEBHOOK_URL || null,
     notifyWebhookToken: e.NOTIFY_WEBHOOK_TOKEN || null,
+    frameAncestors: e.FRAME_ANCESTORS.split(/\s+/).filter(Boolean),
     sessionIdleDays: 7,
     sessionMaxDays: 30,
   };

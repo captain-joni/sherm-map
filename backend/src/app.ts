@@ -32,7 +32,7 @@ export function createApp({ pool, cfg, geocode, rateLimitScale = 1, notify }: Ap
   const limits = createRateLimits(rateLimitScale);
   const hasher = makeHasher(cfg.hashSecret);
 
-  app.use(securityHeaders());
+  app.use(securityHeaders(cfg.frameAncestors));
   app.use(express.json({ limit: '20kb' }));
   app.use(loadSession(pool, cfg));
   app.use('/api', sameOriginOnly(cfg.publicUrl));
