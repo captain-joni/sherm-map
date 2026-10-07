@@ -1,4 +1,28 @@
+# Dependencies
 node_modules/
+
+# Secrets – nur .env.example gehört ins Repo
 .env
+.env.*
+!.env.example
+
+# Laufzeitdaten
 uploads/
 db_data/
+pgdata/
+backups/
+*.dump
+*.sql.gz
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.kate-swp
+*~
+.DS_Store
+Thumbs.db

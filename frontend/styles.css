@@ -196,3 +196,9 @@ html, body {
   }
 
 
+
+.popup-image {
+  display: block;
+  max-width: 200px;
+  margin-top: 5px;
+}

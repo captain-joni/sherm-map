@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Neuen Sherm erstellen</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -9,10 +10,10 @@
   <div id="public-container">
     <h2>Neuen Sherm hinzufügen</h2>
     <h5> Laengen und Breitengrade nur eine Zahl mit Punkt</h5>
-    <input type="text" id="marker-title" placeholder="Titel" required>
-    <input type="text" id="marker-description" placeholder="Beschreibung">
-    <input type="text" id="marker-coord" placeholder="Koordinaten" required>
-    <input type="file" id="marker-image">
+    <input type="text" id="marker-title" placeholder="Titel" maxlength="100" required>
+    <input type="text" id="marker-description" placeholder="Beschreibung" maxlength="1000">
+    <input type="text" id="marker-coord" placeholder="Koordinaten, z.B. 49.41330, 8.68651" inputmode="decimal" required>
+    <input type="file" id="marker-image" accept="image/jpeg,image/png,image/webp">
     <button id="add-marker-btn">Sherm eintragen</button>
     <div id="marker-result"></div>
     <a href="/" class="back-button">Zurück zur Map</a>

@@ -1,26 +1,69 @@
-let token = null;
+const TOKEN_KEY = 'adminToken';
+
+let token = localStorage.getItem(TOKEN_KEY);
 const loginContainer = document.getElementById('login-container');
 const adminContainer = document.getElementById('admin-container');
 const loginError = document.getElementById('login-error');
+const markerList = document.getElementById('marker-list');
+const imageModal = document.getElementById('image-modal');
+const modalImg = document.getElementById('modal-img');
+
+
+function showAdmin() {
+  loginContainer.style.display = 'none';
+  adminContainer.style.display = 'block';
+  loadMarkers();
+}
+
+function logout() {
+  token = null;
+  localStorage.removeItem(TOKEN_KEY);
+  markerList.replaceChildren();
+  adminContainer.style.display = 'none';
+  loginContainer.style.display = 'block';
+}
+
+// fetch mit Token; bei abgelaufenem/ungültigem Token zurück zum Login
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...options.headers, 'Authorization': `Bearer ${token}` }
+  });
+  if (res.status === 401 || res.status === 403) {
+    logout();
+    loginError.innerText = 'Sitzung abgelaufen, bitte neu einloggen';
+    throw new Error('Nicht eingeloggt');
+  }
+  return res;
+}
+
+// Kleiner Helfer: Element mit Klasse und Text bauen (textContent, kein innerHTML -> kein XSS)
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
 
 
 // The Login Check - after clicking the Button, an request to the Server is send to valitade the login cretentials
-document.getElementById('login-btn').addEventListener('click', async () => {
+async function login() {
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
+  loginError.innerText = '';
 
   try {
     const res = await fetch('/api/login', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
     if (data.token) {
       token = data.token;
-      loginContainer.style.display = 'none';
-      adminContainer.style.display = 'block';
-      loadMarkers();
+      localStorage.setItem(TOKEN_KEY, token);
+      document.getElementById('password').value = '';
+      showAdmin();
     } else {
       loginError.innerText = data.error || 'Login fehlgeschlagen';
     }
@@ -28,167 +71,130 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     console.error(err);
     loginError.innerText = 'Serverfehler';
   }
-});
-
-
-// The Logout Button, This logs out, and sets the JWES to Null
-document.getElementById('logout-btn').addEventListener('click', () => {
-  token = null;
-  adminContainer.style.display = 'none';
-  loginContainer.style.display = 'block';
-});
-
-
-// This Function Loads all the Markers, it uses the api/admin/markesr api endpoint, so it gets every Marker entry from the Database and not Just the Valitated ones
-async function loadMarkers() {
-  const res = await fetch('/api/admin/markers', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const markers = await res.json();
-  const list = document.getElementById('marker-list');
-  list.innerHTML = '';
-
- markers
-  .sort((a, b) => a.validated - b.validated)
-  .forEach(m => {
-  const li = document.createElement('li');
-  if (!m.validated) {
-  li.classList.add('unvalidated');
 }
 
-
-const imgButton = m.image_path
-  ? `<button class="view-image-btn" data-src="${m.image_path}">Bild ansehen</button>`
-  : '';
-
-li.innerHTML = `
-  <div class="marker-header">
-    <strong>${m.title}</strong>
-    <span class="marker-author">${m.author || 'Unbekannt'}</span>
-  </div>
-
-  <p class="marker-description">${m.description || ''}</p>
-
-  <div class="marker-actions">
-    <label class="toggle">
-      <input
-        type="checkbox"
-        class="validate-checkbox"
-        data-id="${m.id}"
-        ${m.validated ? 'checked' : ''}
-      />
-      <span class="slider"></span>
-      <span class="toggle-label">
-        ${m.validated ? 'Validiert' : 'Unvalidiert'}
-      </span>
-    </label>
-
-    <div class="action-buttons">
-      ${imgButton}
-      <button class="delete-marker-btn" data-id="${m.id}">
-  Löschen
-</button>
-
-    </div>
-  </div>
-`;
-
-
-  list.appendChild(li);
+document.getElementById('login-btn').addEventListener('click', login);
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
 });
 
-// Checkbox Event
-document.querySelectorAll('.validate-checkbox').forEach(cb => {
-  cb.addEventListener('change', async (e) => {
-    const id = e.target.dataset.id;
-    const validated = e.target.checked;
-    await fetch(`/api/admin/markers/${id}/validate`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ validated })
-    });
-  });
-});
+document.getElementById('logout-btn').addEventListener('click', logout);
 
 
+// This Function Loads all the Markers, it uses the api/admin/markers api endpoint, so it gets every Marker entry from the Database and not Just the Valitated ones
+async function loadMarkers() {
+  try {
+    const res = await apiFetch('/api/admin/markers');
+    const markers = await res.json();
+    markerList.replaceChildren(...markers.map(renderMarker));
+  } catch (err) {
+    console.error(err);
+  }
+}
 
-// Bild-Button Event
-document.querySelectorAll('.view-image-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const src = e.target.dataset.src;
-    const modal = document.getElementById('image-modal');
-    const modalImg = document.getElementById('modal-img');
-    modalImg.src = src;
-    modal.style.display = 'flex';
-  });
-});
+function renderMarker(m) {
+  const li = el('li');
+  if (!m.validated) li.classList.add('unvalidated');
 
-// Löschen-Button Event
-document.querySelectorAll('.delete-marker-btn').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    const id = e.currentTarget.dataset.id;
-    const confirmDelete = confirm('Bist du sicher, dass du diesen Marker löschen willst?');
-    if (!confirmDelete) return;
+  const header = el('div', 'marker-header');
+  header.append(el('strong', null, m.title), el('span', 'marker-author', ` ${m.author || 'Unbekannt'}`));
 
+  const meta = el('p', 'marker-meta',
+    `${new Date(m.created_at).toLocaleString('de-DE')} · ${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}`);
+
+  const description = el('p', 'marker-description', m.description || '');
+
+  // Validierungs-Toggle
+  const toggle = el('label', 'toggle');
+  const checkbox = el('input', 'validate-checkbox');
+  checkbox.type = 'checkbox';
+  checkbox.checked = m.validated;
+  const toggleLabel = el('span', 'toggle-label', m.validated ? 'Validiert' : 'Unvalidiert');
+  toggle.append(checkbox, el('span', 'slider'), toggleLabel);
+
+  checkbox.addEventListener('change', async () => {
+    const validated = checkbox.checked;
     try {
-      const res = await fetch(`/api/admin/markers/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await apiFetch(`/api/admin/markers/${m.id}/validate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ validated })
       });
-      const data = await res.json();
-      if (data.success) {
-        loadMarkers(); // Liste neu laden
-      } else {
-        alert('Fehler beim Löschen');
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toggleLabel.textContent = validated ? 'Validiert' : 'Unvalidiert';
+      li.classList.toggle('unvalidated', !validated);
     } catch (err) {
       console.error(err);
-      alert('Serverfehler');
+      checkbox.checked = !validated;
+      alert('Speichern fehlgeschlagen');
     }
   });
-});
-};
 
+  // Buttons
+  const buttons = el('div', 'action-buttons');
 
+  if (m.image_path) {
+    const imgButton = el('button', 'view-image-btn', 'Bild ansehen');
+    imgButton.addEventListener('click', () => showImage(m.image_path));
+    buttons.append(imgButton);
+  }
 
+  // Ort auf externer Karte ansehen
+  const mapLink = el('a', 'map-link-btn', 'Auf Karte zeigen');
+  mapLink.href = `https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lng}#map=17/${m.lat}/${m.lng}`;
+  mapLink.target = '_blank';
+  mapLink.rel = 'noopener noreferrer';
+  buttons.append(mapLink);
 
+  const deleteButton = el('button', 'delete-marker-btn', 'Löschen');
+  deleteButton.addEventListener('click', () => deleteMarker(m.id));
+  buttons.append(deleteButton);
 
+  const actions = el('div', 'marker-actions');
+  actions.append(toggle, buttons);
 
+  li.append(header, meta, description, actions);
+  return li;
+}
+
+async function deleteMarker(id) {
+  if (!confirm('Bist du sicher, dass du diesen Marker löschen willst?')) return;
+
+  try {
+    const res = await apiFetch(`/api/admin/markers/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      loadMarkers(); // Liste neu laden
+    } else {
+      alert(data.error || 'Fehler beim Löschen');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Serverfehler');
+  }
+}
+
+// Bilder liegen für unvalidierte Sherms nicht öffentlich, daher mit Token laden und als Blob anzeigen
+async function showImage(imagePath) {
+  const filename = imagePath.split('/').pop();
+  try {
+    const res = await apiFetch(`/api/admin/uploads/${encodeURIComponent(filename)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    if (modalImg.src.startsWith('blob:')) URL.revokeObjectURL(modalImg.src);
+    modalImg.src = URL.createObjectURL(blob);
+    imageModal.style.display = 'flex';
+  } catch (err) {
+    console.error(err);
+    alert('Bild konnte nicht geladen werden');
+  }
+}
 
 // Modal schließen bei Klick
-document.getElementById('image-modal').addEventListener('click', () => {
-  document.getElementById('image-modal').style.display = 'none';
+imageModal.addEventListener('click', () => {
+  imageModal.style.display = 'none';
 });
 
 
-
-// Login
-if (data.token) {
-  token = data.token;
-  localStorage.setItem('adminToken', token);  // ← speichern
-  loginContainer.style.display = 'none';
-  adminContainer.style.display = 'block';
-  loadMarkers();
-};
-
-// Direkt beim Laden prüfen
-window.addEventListener('DOMContentLoaded', () => {
-  const savedToken = localStorage.getItem('adminToken');
-  if (savedToken) {
-    token = savedToken;
-    loginContainer.style.display = 'none';
-    adminContainer.style.display = 'block';
-    loadMarkers();
-  }
-});
-
-// Logout
-document.getElementById('logout-btn').addEventListener('click', () => {
-  token = null;
-  localStorage.removeItem('adminToken');  // Token löschen
-  adminContainer.style.display = 'none';
-  loginContainer.style.display = 'block';
-});
+// Direkt beim Laden: gespeicherten Token nutzen
+if (token) showAdmin();

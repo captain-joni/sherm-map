@@ -2,14 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
   <title>Admin Panel</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="login-container">
     <h2>Admin Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Passwort">
+    <input type="text" id="username" placeholder="Username" autocomplete="username">
+    <input type="password" id="password" placeholder="Passwort" autocomplete="current-password">
     <button id="login-btn">Login</button>
     <div id="login-error"></div>
   </div>
@@ -21,7 +23,7 @@
     <h3>Bestehende Marker</h3>
     <!-- Bild-Popup -->
 <div id="image-modal" class="image-prew">
-  <img id="modal-img" src="" style="max-width:80%; max-height:80%; border:3px solid white; border-radius:10px;">
+  <img id="modal-img" src="" alt="Sherm Bild">
 </div>
     <ul id="marker-list"></ul>
   </div>

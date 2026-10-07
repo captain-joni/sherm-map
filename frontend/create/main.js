@@ -10,7 +10,7 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
   try{
     [lat, lng] = splitCoordinates(coord);
     } catch(err){
-    alert('Koordinatenformat stimmt nicht! Bitte in diesem Format 39.030386, 125.733719 ');
+    alert('Koordinatenformat stimmt nicht! Bitte in diesem Format 39.030386, 125.733719 (Breite -90..90, Länge -180..180)');
     return;
   }
 
@@ -32,14 +32,14 @@ document.getElementById('add-marker-btn').addEventListener('click', async () => 
       body: formData
     });
     const data = await res.json();
-    if (data.success) {
+    if (res.ok && data.success) {
       document.getElementById('marker-result').innerText = 'Marker erfolgreich erstellt! Er muss nur noch von uns geprueft werden.';
       document.getElementById('marker-title').value = '';
       document.getElementById('marker-description').value = '';
       document.getElementById('marker-coord').value = '';
       document.getElementById('marker-image').value = '';
     } else {
-      document.getElementById('marker-result').innerText = 'Fehler beim Speichern!';
+      document.getElementById('marker-result').innerText = data.error || 'Fehler beim Speichern!';
     }
   } catch (err) {
     console.error(err);

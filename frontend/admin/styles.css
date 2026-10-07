@@ -279,3 +279,20 @@ body {
 .action-buttons button {
   width: 100%;
 }
+
+.marker-meta {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+}
+
+.map-link-btn {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #0f766e;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}

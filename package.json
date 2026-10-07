@@ -2,10 +2,12 @@
   "name": "sherm-map",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "build": "tsc",
+    "check": "node --check server.js && node --check db.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,11 +16,13 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "pg": "^8.18.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "typescript": "^7.0.2"
   }
 }

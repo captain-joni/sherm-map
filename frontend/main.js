@@ -6,8 +6,9 @@ const START_ZOOM = 8;
 const map = L.map('map').setView([START_LAT, START_LNG], START_ZOOM);
 
 // OpenStreetMap Tiles
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 // Snackbar Funktion
@@ -54,61 +55,47 @@ const AddMarkerControl = L.Control.extend({
 map.addControl(new AddMarkerControl());
 
 
+// Popup-Inhalt als DOM bauen (textContent statt innerHTML, sonst XSS über Titel/Beschreibung)
+function buildPopup(m, marker) {
+  const container = document.createElement('div');
+
+  const title = document.createElement('strong');
+  title.textContent = m.title || 'Sherm';
+  container.append(title);
+
+  if (m.image_path) {
+    const img = document.createElement('img');
+    img.className = 'popup-image';
+    img.alt = m.title || '';
+    // Popup neu ausrichten, sobald das Bild seine Größe kennt
+    img.addEventListener('load', () => marker.getPopup()?.update());
+    img.src = m.image_path;
+    container.append(img);
+  }
+
+  if (m.description) {
+    const p = document.createElement('p');
+    p.textContent = m.description;
+    container.append(p);
+  }
+
+  return container;
+}
+
 // Marker von DB laden
 async function loadMarkers() {
   try {
     const res = await fetch('/api/markers');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const markers = await res.json();
 
-markers.forEach(m => {
-
-  const marker = L.marker(
-    [m.lat, m.lng],
-    { icon: getResponsiveIcon() }
-  ).addTo(map);
-
-  marker.on('click', function () {
-
-    let popupContent = `<strong>${m.title || 'Marker'}</strong>`;
-
-    if (m.image_path) {
-
-      const img = new Image();
-      img.src = m.image_path;
-
-      img.onload = function () {
-
-        popupContent += `
-          <br/>
-          <img src="${m.image_path}" 
-               style="max-width:200px; margin-top:5px;" />
-        `;
-
-        if (m.description) {
-          popupContent += `<p>${m.description}</p>`;
-        }
-
-        marker.bindPopup(popupContent).openPopup();
-      };
-
-    } else {
-      if (m.description) {
-        popupContent += `<p>${m.description}</p>`;
-      }
-
-      marker.bindPopup(popupContent).openPopup();
-    }
-
-  });
-
-});
-
-
-
-
-
+    markers.forEach(m => {
+      const marker = L.marker([m.lat, m.lng], { icon: getResponsiveIcon() }).addTo(map);
+      marker.bindPopup(() => buildPopup(m, marker));
+    });
   } catch (err) {
     console.error('Marker laden fehlgeschlagen', err);
+    showSnackbar('Sherms konnten nicht geladen werden');
   }
 }
 
