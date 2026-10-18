@@ -48,14 +48,27 @@ mv "$out.partial" "$out"
 log "✅ $out ($(du -h "$out" | cut -f1), Tabellen: $(cat "$work/tables.json"))"
 
 # 3. Aufbewahrung: pro Tag/Woche/Monat jeweils das neueste Backup behalten
+# Zahl aus der Konfiguration oder Default (mit Warnung): ungültige Werte würden sonst alles löschen
+keep_value() {
+  local name=$1 default=$2 value=${!1:-}
+  if [[ -z $value ]]; then echo "$default"
+  elif [[ $value =~ ^[0-9]+$ ]]; then echo "$value"
+  else log "⚠️  $name=\"$value\" ist keine Zahl, nehme $default"; echo "$default"
+  fi
+}
+
 prune() {
-  local keep_d=${KEEP_DAILY:-7} keep_w=${KEEP_WEEKLY:-4} keep_m=${KEEP_MONTHLY:-6}
+  local keep_d keep_w keep_m
+  keep_d=$(keep_value KEEP_DAILY 7) keep_w=$(keep_value KEEP_WEEKLY 4) keep_m=$(keep_value KEEP_MONTHLY 6)
+  log "Aufbewahrung: $keep_d täglich, $keep_w wöchentlich, $keep_m monatlich"
   local -A days=() weeks=() months=()
   local f stamp day week month keep
   while IFS= read -r f; do
     stamp=$(basename "$f" | sed -n 's/^sherm-backup-\([0-9]\{8\}\)-[0-9]\{6\}\.tar\.gz$/\1/p')
     [[ -n $stamp ]] || continue
-    day=$stamp week=$(date -d "$stamp" +%G%V) month=${stamp:0:6} keep=0
+    # das gerade erstellte Backup nie löschen, egal was die Regeln sagen
+    if [[ $f -ef $out ]]; then keep=1; else keep=0; fi
+    day=$stamp week=$(date -d "$stamp" +%G%V) month=${stamp:0:6}
     if [[ -z ${days[$day]:-} && ${#days[@]} -lt $keep_d ]]; then days[$day]=1; keep=1; fi
     if [[ -z ${weeks[$week]:-} && ${#weeks[@]} -lt $keep_w ]]; then weeks[$week]=1; keep=1; fi
     if [[ -z ${months[$month]:-} && ${#months[@]} -lt $keep_m ]]; then months[$month]=1; keep=1; fi

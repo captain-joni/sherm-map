@@ -22,7 +22,13 @@ load_config() {
     [[ $line =~ ^[[:space:]]*(BACKUP_DIR|UPLOADS_DIR|KEEP_DAILY|KEEP_WEEKLY|KEEP_MONTHLY|BACKUP_POST_HOOK|NOTIFY_WEBHOOK_URL|NOTIFY_WEBHOOK_TOKEN|BACKUP_NOTIFY_SUCCESS|POSTGIS_IMAGE)=(.*)$ ]] || continue
     key=${BASH_REMATCH[1]}
     value=${BASH_REMATCH[2]%$'\r'}
-    [[ $value =~ ^\"(.*)\"$ || $value =~ ^\'(.*)\'$ ]] && value=${BASH_REMATCH[1]}
+    if [[ $value =~ ^\"(.*)\"[[:space:]]*(#.*)?$ || $value =~ ^\'(.*)\'[[:space:]]*(#.*)?$ ]]; then
+      value=${BASH_REMATCH[1]}
+    else
+      # ohne Anführungszeichen: Kommentar am Zeilenende und Leerzeichen weg ("7  # Tage" -> "7")
+      value=${value%%[[:space:]]#*}
+      value=${value%"${value##*[![:space:]]}"}
+    fi
     [[ -n ${!key+x} ]] && continue # Umgebung gewinnt
     printf -v "$key" '%s' "$value"
   done < "$file"
