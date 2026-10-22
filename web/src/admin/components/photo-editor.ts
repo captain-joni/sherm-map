@@ -49,9 +49,22 @@ export function openPhotoEditor(photo: AdminPhoto, onSaved: (photo: AdminPhoto) 
     canvas = next;
     canvas.className = 'editor-canvas';
     stage.replaceChildren(canvas, selection);
+    fit();
     undoButton.disabled = undo.length === 0;
     save.disabled = undo.length === 0;
   }
+
+  // Große Fotos ganz in die Fläche einpassen (nie hochskalieren). Die Canvas behält die volle Auflösung,
+  // Mauskoordinaten werden über getBoundingClientRect umgerechnet.
+  const PAD = 16; // 2 × padding der .editor-stage
+  function fit() {
+    const scale = Math.min((stage.clientWidth - PAD) / canvas.width, (stage.clientHeight - PAD) / canvas.height, 1);
+    if (!(scale > 0)) return;
+    canvas.style.width = `${Math.floor(canvas.width * scale)}px`;
+    canvas.style.height = `${Math.floor(canvas.height * scale)}px`;
+  }
+  const resizeObserver = new ResizeObserver(fit);
+  resizeObserver.observe(stage);
 
   function copy(source: HTMLCanvasElement | ImageBitmap, sx = 0, sy = 0, sw = source.width, sh = source.height) {
     const c = document.createElement('canvas');
@@ -150,7 +163,7 @@ export function openPhotoEditor(photo: AdminPhoto, onSaved: (photo: AdminPhoto) 
     dialog.close();
   }
   dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
-  dialog.addEventListener('close', () => dialog.remove());
+  dialog.addEventListener('close', () => { resizeObserver.disconnect(); dialog.remove(); });
 
   document.body.append(dialog);
   dialog.showModal();
