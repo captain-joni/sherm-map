@@ -21,6 +21,10 @@ async function main() {
 
   const server = createApp({ pool, cfg }).listen(cfg.port, () => {
     console.log(`🚀 Sherm Map v2 läuft auf http://localhost:${cfg.port}`);
+    // Nur der Host, damit kein Token/Pfad im Log landet
+    console.log(cfg.notifyWebhookUrl
+      ? `🔔 Webhook aktiv: ${new URL(cfg.notifyWebhookUrl).host}`
+      : '🔕 Kein NOTIFY_WEBHOOK_URL gesetzt, keine Benachrichtigungen');
   });
 
   // Sauber herunterfahren (docker stop): laufende Requests fertig machen, dann DB schließen
